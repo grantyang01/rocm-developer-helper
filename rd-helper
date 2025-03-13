@@ -1,0 +1,185 @@
+# !bin/sh
+help() {
+    echo "$(basename $0) -r <rocm_src_base_dir> -b <clr|hip-tests>"
+    exit 0
+}
+
+function die() {
+    echo "$*" 1>&2 ; 
+    exit 1; 
+}
+
+function refresh_dir() {
+    local DIR="$1"
+    [[ -d "$DIR" ]] && rm -rf "$DIR"
+    mkdir -p "$DIR"
+}
+
+function config() {
+    BASE_DIR="$1"
+    REPOS="https://github.com/ROCm/clr.git `
+          `https://github.com/ROCm/hip.git `
+          `https://github.com/ROCm/hip-tests.git"
+    local repo
+    for repo in $REPOS; do
+        local name=${repo%.*}
+        name=${name##*/}
+        local name_v=${name//-} # remove - in "hip-test"
+        name_v=${name_v^^} # to upper cases
+
+        # setup *_DIR variables
+        eval ${name_v}_DIR="${BASE_DIR}/${name}"
+    done
+    echo "CLR_DIR=$CLR_DIR"
+    echo "HIP_DIR=$HIP_DIR"
+    echo "HIPTESTS_DIR=$HIPTESTS_DIR"
+    return 0
+}
+
+function clone() {
+    local base_dir="$1"
+    local repos="$2"
+
+    local repo    
+    for repo in $repos; do
+        local name=${repo%.*}
+        name=${name##*/}
+        local path="$BASE_DIR/$name"
+        printf "clone %s to %s ...\n" "$name" "$path"
+        if ! git clone "$repo" "$path"; then
+            die "failed to clone: $name"
+        fi
+        pushd "$path" &>/dev/null
+        if ! git branch; then
+            die "failed to check branch: $name"
+        fi
+        popd &>/dev/null
+    done
+}
+
+function generate_profile() {
+    local tool="${CLR_DIR}/hipamd/src/hip_prof_gen.py"
+    if [[ ! -f "${tool}" ]]; then
+        die "${tool} not exist"
+    fi
+
+    local header="${HIP_DIR}/include/hip/hip_runtime_api.h"
+    if [[ ! -f "${header}" ]]; then
+        die "${header} not exist"
+    fi
+
+    local hipamd="${CLR_DIR}/hipamd/src"
+    if [[ ! -d "${hipamd}" ]]; then
+        die "${hipamd} not exist"
+    fi
+
+    local prof_origin="${CLR_DIR}/hipamd/include/hip/amd_detail/hip_prof_str.h"
+    if [[ ! -f "${prof_origin}" ]]; then
+        die "${prof_origin} not exist"
+    fi
+
+    local prof_new="${CLR_DIR}/hipamd/include/hip/amd_detail/hip_prof_str.h.new"
+
+    # generate profile
+    python3 ${tool} -v -p -t --priv "$header" "$hipamd" "$prof_origin" "$prof_new"
+
+    if [[ ! -f "${prof_new}" ]]; then
+        die "${prof_new} not generated"
+    else
+        echo "${prof_new} generated successfully"
+    fi
+    return 0
+}
+
+function build_component() {
+    # clr
+    local CLR_BUILD="${CLR_DIR}/build"
+    refresh_dir "$CLR_BUILD"
+    pushd "$CLR_BUILD" &>/dev/null
+
+    . "$HOME/python-venv/cpp-header-parser/bin/activate"
+    if ! cmake `
+        `-DHIP_COMMON_DIR=$HIP_DIR `
+        `-DHIP_PLATFORM=amd `
+        `-DCMAKE_PREFIX_PATH="/opt/rocm/" `
+        `-DCMAKE_INSTALL_PREFIX=/opt/rocm `
+        `-DHIP_CATCH_TEST=0 `
+        `-DCLR_BUILD_HIP=ON `
+        `-DCLR_BUILD_OCL=OFF ..; then
+        die "cmake fail: clr"
+    fi
+
+    if ! make -j $(nproc); then
+        die "make fail: clr"
+    fi
+    
+    if ! sudo make install; then 
+        die "install fail: clr"
+    fi
+
+    # hip-tests
+    local HIPTESTS_BUILD="${HIPTESTS_DIR}/build"
+    refresh_dir "$HIPTESTS_BUILD"
+    pushd "$HIPTESTS_BUILD" &>/dev/null
+
+    if ! cmake ../catch `
+         `-DHIP_PLATFORM=amd `
+         `-DHIP_PATH=/opt/rocm; then
+         die "cmake fail: hip-tests"
+    fi
+
+    if ! make build_tests -j $(nproc); then
+        die "make fail: hip-tests"
+    fi
+
+    popd &>/dev/null
+}
+
+function parse_log() {
+    local log_files="$(ls ./log/*.log)"
+    local name
+    printf "Name,Passed,Skipped,Failed\n"
+
+    for file_name in $log_files; do
+        local name=${file_name%.*}
+        name=${name##*/}
+        local pass=$(grep 'Passed' "$file_name" | wc -l)
+        local skip=$(grep '\*\*\*Skipped' "$file_name" | wc -l)
+        local fail=$(grep '\*\*\*Failed' "$file_name" | wc -l)
+        printf "%s,%s,%s,%s\n" "$name" "$pass" "$skip" "$fail"
+    done
+}
+
+function unit_test() {
+    local tests="$(ls -d */| sed 's#/##')"
+    local name
+
+    local log_dir="$(realpath ./log)"
+    refresh_dir "$log_dir"
+    count=0
+    for name in $tests; do 
+        if [[ "$name" == "log" || "$name" == "memory" || "$name" == "virtualMemoryManagement" ]]; then
+            continue;
+        fi
+
+        local log_file="${log_dir}/${name}.log"
+        (( count = count + 1 ))
+        printf "%d.name: %s\n" "$count" "$name"
+        pushd "$name" &>/dev/null
+        ctest -O "$log_file"
+        popd &>/dev/null
+    done
+}
+
+config "$(realpath "./")"
+while getopts cbgtph arg
+do
+	case $arg in
+        c) clone "$BASE_DIR" "$REPOS";;
+        b) build_component;;
+        g) generate_profile;;
+        t) unit_test;;
+        p) parse_log;;
+		h) help;;
+	esac
+done
