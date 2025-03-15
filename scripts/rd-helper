@@ -1,18 +1,60 @@
 # !bin/sh
 help() {
-    echo "$(basename $0) -r <rocm_src_base_dir> -b <clr|hip-tests>"
+    echo "$(basename $0) [ -r <root_path> | -i <stage> | -c | -b | -g | -t | -p | -h] "
+    echo "    -r <root_path>"
+    echo "        set root path of rocm src code"
+    echo "    -i <stage>"
+    echo "        0 - initialize developer tools"
+    echo "        1 - deinitialize(unblock rocm pkgs, and prepare for uninstallation)"
+    echo "    -c"
+    echo "        clone clr/hip/hip-tests to current directory"
+    echo "    -b"
+    echo "        build and install clr/hip-tests"
+    echo "    -g"
+    echo "        generate clr profile string"
+    echo "    -t"
+    echo "        run hip-tests"
+    echo "    -p"
+    echo "        parser hip-tests results"
+    echo "    -h"
+    echo "        display this message"
     exit 0
 }
 
-function die() {
-    echo "$*" 1>&2 ; 
-    exit 1; 
-}
+# stage - 0  initialize
+#       - 1  restore pkgs hold status
+function init() {
+    local stage="$1"
 
-function refresh_dir() {
-    local DIR="$1"
-    [[ -d "$DIR" ]] && rm -rf "$DIR"
-    mkdir -p "$DIR"
+    local rocm_pkgs="hipcc:amd64 rocm-cmake:amd64 rocminfo:amd64"
+    if (( stage == 0 )); then
+        # block rocm update from OS repo
+        control_pkgs "$rocm_pkgs" 3
+    else
+        # unblock rocm pkgs, prepare for uninstallation
+        control_pkgs "$rocm_pkgs" 4
+        return 0
+    fi
+
+    # developer tools
+    control_pkgs "cmake build-essential python3-venv git-lfs" 1
+
+    # pkgs needed by hip-tests
+    # control_pkgs "freeglut3-dev libegl1-mesa-dev:amd64 libgl1-mesa-dev:amd64" 1
+    control_pkgs "freeglut3-dev" 1
+
+    # create venv and install CppHeaderParser
+    refresh_dir "$PYTHON_ENV"
+    python3 -m venv "$PYTHON_ENV"
+    . "$PYTHON_ENV/bin/activate"
+    pip install --upgrade pip
+    pip --version
+    pip install CppHeaderParser
+    python3 -m pip list
+
+    # add user to render and video group
+    sudo usermod -a -G video,render $USER
+    return 0
 }
 
 function config() {
@@ -30,9 +72,11 @@ function config() {
         # setup *_DIR variables
         eval ${name_v}_DIR="${BASE_DIR}/${name}"
     done
-    echo "CLR_DIR=$CLR_DIR"
-    echo "HIP_DIR=$HIP_DIR"
-    echo "HIPTESTS_DIR=$HIPTESTS_DIR"
+    PYTHON_ENV="$HOME/python-venv/cpp-header-parser"
+    log "CLR_DIR=$CLR_DIR"
+    log "HIP_DIR=$HIP_DIR"
+    log "HIPTESTS_DIR=$HIPTESTS_DIR"
+    log "PYTHON_ENV=$PYTHON_ENV"
     return 0
 }
 
@@ -49,11 +93,12 @@ function clone() {
         if ! git clone "$repo" "$path"; then
             die "failed to clone: $name"
         fi
-        pushd "$path" &>/dev/null
+        pushd "$path"
         if ! git branch; then
             die "failed to check branch: $name"
         fi
-        popd &>/dev/null
+        log "clone successfully: $repo"
+        popd
     done
 }
 
@@ -86,18 +131,17 @@ function generate_profile() {
     if [[ ! -f "${prof_new}" ]]; then
         die "${prof_new} not generated"
     else
-        echo "${prof_new} generated successfully"
+        log "${prof_new} generated successfully"
     fi
     return 0
 }
 
-function build_component() {
-    # clr
+function build_clr(){
     local CLR_BUILD="${CLR_DIR}/build"
     refresh_dir "$CLR_BUILD"
-    pushd "$CLR_BUILD" &>/dev/null
+    pushd "$CLR_BUILD"
 
-    . "$HOME/python-venv/cpp-header-parser/bin/activate"
+    . "$PYTHON_ENV/bin/activate"
     if ! cmake `
         `-DHIP_COMMON_DIR=$HIP_DIR `
         `-DHIP_PLATFORM=amd `
@@ -108,78 +152,171 @@ function build_component() {
         `-DCLR_BUILD_OCL=OFF ..; then
         die "cmake fail: clr"
     fi
+    log "cmake successfuly: clr"
 
     if ! make -j $(nproc); then
         die "make fail: clr"
     fi
+    log "make successfuly: clr"
     
     if ! sudo make install; then 
         die "install fail: clr"
     fi
+    log "install successfuly: clr"
+    popd
+}
 
+function build_hip_tests() {
     # hip-tests
     local HIPTESTS_BUILD="${HIPTESTS_DIR}/build"
     refresh_dir "$HIPTESTS_BUILD"
-    pushd "$HIPTESTS_BUILD" &>/dev/null
-
+    pushd "$HIPTESTS_BUILD"
     if ! cmake ../catch `
          `-DHIP_PLATFORM=amd `
          `-DHIP_PATH=/opt/rocm; then
          die "cmake fail: hip-tests"
     fi
+    log "cmake successfuly: hip-tests"
 
     if ! make build_tests -j $(nproc); then
         die "make fail: hip-tests"
     fi
+    log "make successfuly: hip-tests"
+    popd
+}
 
-    popd &>/dev/null
+function build_component() {
+    local component=$1
+    case $component in
+        clr)build_clr;;
+        test)build_hip_tests;;
+        all)build_clr
+            build_hip_tests;;
+    esac
+}
+
+function unit_test() {
+    local group="$1"
+    local path="${HIPTESTS_DIR}/build/catch_tests/unit"
+    if [[ ! -d "$path" ]]; then
+        die "unit test not found: $path"
+    fi
+
+    pushd "$path"
+    local tests
+    if [[ "$group" == "all" ]]; then
+        tests="$(ls -d */| sed 's#/##')"
+    else
+        tests="$group"
+    fi
+
+    local name
+    local log_dir="$(realpath "${BASE_DIR}/log")"
+    [[ ! -d "$log_dir" ]] && mkdir -p "$log_dir"
+    count=0
+    for name in $tests; do 
+        if [[ "$group" == "all" ]]; then
+            if [[ "$name" == "memory" || "$name" == "virtualMemoryManagement" ]]; then
+                continue;
+            fi
+        fi
+        local log_file="${log_dir}/${name}.log"
+        (( count = count + 1 ))
+        printf "%d.name: %s\n" "$count" "$name"
+        pushd "$name"
+        ctest -O "$log_file"
+        popd
+        log "test compeleted: $name"
+    done
+    popd
 }
 
 function parse_log() {
-    local log_files="$(ls ./log/*.log)"
+    local log_files="$(ls ${BASE_DIR}/log/*.log)"
     local name
-    printf "Name,Passed,Skipped,Failed\n"
+    printf "Ordinal,Name,Passed,Skipped,Failed,Exception\n"
 
+    ordinal=0
     for file_name in $log_files; do
         local name=${file_name%.*}
         name=${name##*/}
         local pass=$(grep 'Passed' "$file_name" | wc -l)
         local skip=$(grep '\*\*\*Skipped' "$file_name" | wc -l)
         local fail=$(grep '\*\*\*Failed' "$file_name" | wc -l)
-        printf "%s,%s,%s,%s\n" "$name" "$pass" "$skip" "$fail"
+        local exception=$(grep '\*\*\*Exception' "$file_name" | wc -l)
+        (( ordinal = ordinal + 1 ))
+        printf "%d,%s,%s,%s,%s,%s\n" $ordinal "$name" "$pass" "$skip" "$fail" "$exception"
     done
+
+    printf "Ordinal,Failed/Exception\n"
+    grep -h '(SEGFAULT)\|(Failed)' $log_files | awk -F - '{printf "%d,%s\n", NR, $2}'
 }
 
-function unit_test() {
-    local tests="$(ls -d */| sed 's#/##')"
-    local name
+# make tools available
+bin_dir=$(realpath $0|xargs dirname)
+PATH=${bin_dir}:${bin_dir}/util:$PATH
+SELF=`basename $0`
 
-    local log_dir="$(realpath ./log)"
-    refresh_dir "$log_dir"
-    count=0
-    for name in $tests; do 
-        if [[ "$name" == "log" || "$name" == "memory" || "$name" == "virtualMemoryManagement" ]]; then
-            continue;
-        fi
+# import utilities
+. os-helper
+. package-helper
+. tools
 
-        local log_file="${log_dir}/${name}.log"
-        (( count = count + 1 ))
-        printf "%d.name: %s\n" "$count" "$name"
-        pushd "$name" &>/dev/null
-        ctest -O "$log_file"
-        popd &>/dev/null
-    done
-}
-
-config "$(realpath "./")"
-while getopts cbgtph arg
+# init parameters
+root_path="./"
+init_env=0
+init_stage=0
+clone_repo=0
+build_comps=""
+generate_prof=0
+test_groups=""
+parse=0
+while getopts r:i:t:b:cgph arg
 do
 	case $arg in
-        c) clone "$BASE_DIR" "$REPOS";;
-        b) build_component;;
-        g) generate_profile;;
-        t) unit_test;;
-        p) parse_log;;
-		h) help;;
+        r) root_path="$OPTARG";;
+        i) init_env=1
+           init_stage="$OPTARG";;
+        c) clone_repo=1;;
+        b) build_comps="$OPTARG";;
+        g) generate_prof=1;;
+        t) test_groups="$OPTARG";;
+        p) parse=1;;
+		h) help
+           exit 0
+        ;;
 	esac
 done
+
+if [[ ! -d "$root_path" ]]; then
+    if ! mkdir -p "$root_path"; then
+        die "can not create: $root_path"
+    fi
+fi
+config "$(realpath "$root_path")"
+
+if (( init_env == 1 )); then
+    init "$init_stage"
+fi
+
+if (( clone_repo == 1 )); then
+    clone "$BASE_DIR" "$REPOS"
+fi
+
+if [[ ! -z "$build_comps" ]]; then
+    build_component "$build_comps"
+fi
+
+if (( generate_prof == 1 )); then
+    generate_profile
+fi
+
+if [[ ! -z "$test_groups" ]]; then
+    unit_test "$test_groups"
+fi
+
+if (( parse == 1 )); then
+    parse_log
+fi
+
+exit 0

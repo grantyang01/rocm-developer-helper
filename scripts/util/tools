@@ -1,0 +1,209 @@
+#!/bin/bash
+# misc tools
+function pushd() {
+    command pushd "$@" &> /dev/null
+}
+
+function popd() {
+    command popd "$@" &> /dev/null
+}
+
+function log() {
+    echo -e "\e[32m${SELF}- $*\e[0m" 1>&2 ; 
+}
+
+function die() {
+    echo -e "\e[31m${SELF}- $*\e[0m" 1>&2 ; 
+    exit 1; 
+}
+
+function refresh_dir() {
+    local DIR="$1"
+    [[ -d "$DIR" ]] && rm -rf "$DIR"
+    mkdir -p "$DIR"
+}
+
+function validate_url(){
+    local url=$1
+    if [[ `wget -S --spider $url  2>&1 | grep 'HTTP/1.1 200'` ]]; then 
+        return 0 
+    else 
+        return -1
+    fi
+}
+
+function validate_dir() {
+    local dir=$1
+    if [[ -d "$dir" && ! -z $(ls -A "$dir") ]]; then
+        return 0
+    fi
+    return 1
+}
+
+function find_first_legal_url() {
+    local -n urls=$1
+    local url
+    for url in "${urls[@]}"; do
+        if validate_url $url; then
+            echo $url
+            break;
+        fi
+    done
+}
+
+function download_file() {
+    local path=$1
+    local target_dir=$2
+    local cmd_option=$3
+
+    local file_name=${path##*/}
+    if ! wget ${cmd_option} --no-check-certificate -q -O${target_dir}/${file_name} ${path}; then
+        return -1
+    fi
+    return 0
+}
+
+function rpm_find() {
+    local pkg=$1
+    local arch=$2
+
+    # search keys: pkg, $arch
+    local url="https://rpmfind.net/linux/rpm2html/`
+               `search.php?query=${pkg}&`
+               `submit=Search+...&`
+               `system=&`
+               `arch=${arch}"
+
+    local path=$(wget -SO - ${url} 2>/dev/null |`
+                `xmllint --html --xpath '//html/body/*/*/*/*/a/@href' - 2>/dev/null |`
+                `tr ' ' '\n' |`
+                `grep '\.rpm' |`
+                `awk -F '"' '{print $2}')
+
+    if [[ -z $path ]]; then
+        return -1
+    fi
+
+    local sorted_path=$(rpmpathsort $pkg $arch $path)
+    local tmp=$(mktemp -d)
+    local result=-1
+    for curr in $sorted_path; do 
+        if download_file "https://rpmfind.net${curr}" $tmp; then
+            # install
+            if sudo rpm -ivh $tmp/${curr##*/}; then
+                result=0
+                break;
+            fi
+        fi
+    done
+    rm -rf $tmp
+    return $result
+}
+
+function suse_online_repo_available() {
+    # suse online repos:
+    #   suse: only available for subscribed user.
+    #   opensuse: always available.
+    if zypper repos -Eu 2>/dev/null | `
+      `grep http: >/dev/null; then
+        return 0
+    fi
+    return 1
+}
+
+function check_tool() {
+    local tool=$1
+    local remedyPkg=$2
+    local pkg_type=$3
+
+    # tool exist?
+    if which $tool >/dev/null 2>&1; then
+        return 0
+    fi
+
+    # install remedy pkg
+    echo "installing ${remedyPkg}..."
+    if [[ $pkg_type == "deb" ]]; then
+        if sudo apt-get install $remedyPkg -y; then
+            return 0
+        fi
+    else
+        # try online repos
+        if which zypper >/dev/null 2>&1; then
+            if suse_online_repo_available && `
+               `zypper search --match-exact $remedyPkg && `
+               `sudo zypper install -y "$remedyPkg"; then
+                return 0
+            fi
+        elif which yum  >/dev/null 2>&1 &&`
+            `yum list $remedyPkg >/dev/null 2>&1 &&`
+            `sudo yum install $remedyPkg -y; then
+            return 0
+        fi
+
+        # try rpmfind
+        if rpm_find $remedyPkg x86_64; then
+            return 0
+        else
+            if rpm_find $remedyPkg noarch; then
+                return 0
+            fi
+        fi        
+    fi
+    return -1
+}
+
+function verify_tools() {
+    local pkg_type=$1
+
+    local pkgXml="libxml2"
+    if [[ $pkg_type == "deb" ]]; then
+        pkgXml="libxml2-utils"
+    fi
+
+    if ! check_tool xmllint $pkgXml $pkg_type; then
+        echo "tool not available: xmllint"
+        exit -1
+    fi
+
+    if ! check_tool curl curl $pkg_type; then
+        echo "tool not available: curl"
+        exit -1
+    fi
+
+    if [[ $pkg_type == "deb" ]]; then
+        if ! check_tool dpkg-scanpackages dpkg-dev $pkg_type; then
+            echo "tool not available: dpkg-scanpackages"
+            exit -1
+        fi
+    else
+        if ! check_tool createrepo_c createrepo_c $pkg_type; then
+            echo "tool not available: createrepo_c"
+            exit -1
+        fi
+    fi
+
+    if ! check_tool jq jq $pkg_type; then
+        echo "tool not available: jq"
+        exit -1
+    fi
+
+    if ! check_tool makeself makeself $pkg_type; then
+        echo "tool not available: makeself"
+        exit -1
+    fi
+}
+
+function permute() {
+    local -n lhs=$1
+    local -n rhs=$2
+
+    local i
+    local j
+    for (( i = 0; i < ${#lhs[@]}; i++ )); do
+        for (( j = 0; j < ${#rhs[@]}; j++ )); do
+            printf "%s%s " ${lhs[i]} ${rhs[j]}
+        done
+    done
+    return 0
+}

@@ -1,0 +1,252 @@
+#!/bin/bash
+# helper to identify distros
+
+function get_os_id() {
+    if (( $# == 0 )); then
+        [[ ! -r  /etc/os-release ]] && { echo "Unknown OS"; exit -1; }
+        awk -F =  '/^ID=/{print $2}' /etc/os-release | tr --delete '"'
+        return 0
+    else
+        local code=$1
+        case $code in
+            noble|jammy|focal|bionic) 
+                echo "ubuntu";;
+            linuxmint*|debian*|`
+            `rhel*|centos*|`
+            `almalinux*|rocky*|ol*|fedora|`
+            `sle*|`
+            `opensuse*|mariner|amzn*) 
+                awk -F - '{print $1}' <<< $code;;
+            *) echo "Unknown OS: $code"; exit -1 ;;
+        esac
+        return 0
+    fi
+}
+
+function get_advance_install_command() {
+    local code=$1
+    case $code in
+        noble|jammy|focal|bionic|linuxmint*|debian*) 
+            printf "sudo apt-get install -y ";;
+        rhel*|rocky*)
+            printf "sudo yum install ";;
+        sle*|opensuse*)
+            printf "zypper install --allow-unsigned-rpm -y ";;
+        *) echo "Unknown OS: $code"; exit -1 ;;
+    esac
+}
+
+function get_pkg_type() {
+    local code=$1
+    local pkg_type
+    case $code in
+        noble|jammy|focal|bionic|linuxmint*|debian*) 
+            pkg_type="deb" ;;
+        rhel*|centos*|almalinux*|`
+        `rocky*|ol*|fedora|sle*|`
+        `opensuse*|mariner|amzn*) 
+            pkg_type="rpm" ;;
+        *) echo "Unknown OS: $code"; exit -1 ;;
+    esac
+    echo $pkg_type
+    return 0
+}
+
+#example:
+#  get_sub_version rhel-9.4
+#  get_sub_version rhel-9.4 1
+#  get_sub_version rhel-9.4.3 3
+function get_sub_version() {
+    local code=$1
+    local ordinal=$2
+    if (( $# == 1 )); then
+        ordinal=1
+    fi
+
+    awk -v ordinal=$ordinal -F "[-.]" <<<$code '{ 
+        for (i=0; i <= $NF + 1; i++) {
+            if (i==ordinal+1) 
+                print $i
+        }
+    }'
+    return 0
+}
+
+function get_os_major_version() {
+    local code=$1
+
+    case $code in
+        noble) echo "24" ;;
+        jammy) echo "22" ;;
+        focal) echo "20" ;;
+        bionic) echo "18" ;;
+        *) get_sub_version $code 1;;
+    esac
+}
+
+function get_os_minor_version() {
+    local code=$1
+
+    case $code in
+        noble) echo "04" ;;
+        jammy) echo "04" ;;
+        focal) echo "04" ;;
+        bionic) echo "04" ;;
+        *) get_sub_version $code 2;;
+    esac
+}
+
+
+function get_code_id() {
+    local code=$1
+    case $code in
+        noble|jammy|focal|bionic) echo "ubuntu" ;;
+        rhel*|centos*|almalinux*|rocky*|ol*|amzn*) echo "rhel" ;;
+        sle*|opensuse*) echo "sle" ;;
+        mariner*) echo "mariner" ;;
+        fedora*) echo "fedora";;
+        *) echo "Unknown OS: $code"; exit -1; exit -1;;
+    esac
+}
+
+function get_code_version() {
+    local code=$1
+    case $code in
+        noble) echo "24.04" ;;
+        jammy) echo "22.04" ;;
+        focal) echo "20.04" ;;
+        bionic) echo "18.04" ;;
+        amzn*) 
+            local major_version=$(get_os_major_version $code)
+            case $major_version in
+                2) echo "7.9" ;;
+                2023) echo "9.3" ;;
+                *) echo "Unknown OS: $code"; exit -1; exit -1;;
+            esac
+            ;;
+        *) cut -d "-" -f 2 <<<$code;;
+    esac
+}
+
+function get_os_type() {
+    local code=$1
+    local grfx_os_type="rpm"
+    local rocm_os_type
+    local major_version
+    case $code in
+        "noble") grfx_os_type="deb";rocm_os_type="24.04-deb" ;;
+        "jammy") grfx_os_type="deb";rocm_os_type="22.04-deb" ;;
+        "focal") grfx_os_type="deb";rocm_os_type="20.04-deb" ;;
+        "bionic") grfx_os_type="deb";rocm_os_type="deb" ;;
+        linuxmint*|debian*)
+            grfx_os_type="rpm"
+            major_version=$(cut -d - -f 2 <<<$code | cut -d . -f 1)
+            case "$major_version" in
+                18) rocm_os_type="deb";;
+                20|22|24) rocm_os_type="${major_version}.04-deb";;
+                *) "Unknown code: $code"; exit -1;;
+            esac
+            ;;
+
+        rhel*|centos*|almalinux*|rocky*|ol*)
+            major_version=$(cut -d - -f 2 <<<$code | cut -d . -f 1)
+            case "$major_version" in
+                9|8) rocm_os_type="rhel-${major_version}.x";;
+                7) rocm_os_type="rpm";;
+                *) echo "Unknown code: $code"; exit -1 ;;
+            esac
+            ;;
+        fedora) rocm_os_type="rpm" ;;
+        sle*|opensuse*) rocm_os_type="sles" ;;
+        mariner) rocm_os_type="mariner-2.x" ;;
+        amzn*)
+            major_version=$(cut -d - -f 2 <<<$code | cut -d . -f 1)
+            case $major_version in
+                2) rocm_os_type="rpm" ;;
+                2023) rocm_os_type="rhel-9.x";;
+                *) echo "Unknown code: $code"; exit -1 ;;
+            esac
+            ;;
+        *) echo "Unknown code: $code"; exit -1 ;;
+    esac
+    printf "grfx_os_type:${grfx_os_type}\nrocm_os_type:${rocm_os_type}\n"
+    return 0
+}
+
+function get_codename() {
+    [[ ! -r /etc/os-release ]] && { echo "Unknown OS"; exit -1; }
+    # ubuntu
+    local codename=$(awk -F =  '/^VERSION_CODENAME=/{print $2}' /etc/os-release | tr --delete '"')
+    if [[ -z $codename ]]; then
+        # other OSes
+        codename=$(awk -F =  '/^ID=/{print $2}' /etc/os-release | tr --delete '"')-`
+                 `$(awk -F =  '/^VERSION_ID=/{print $2}' /etc/os-release | tr --delete '"')
+        # opensuse-leap: too long. We never use tumbleweed, leap is the only one to support
+        if [[ "$codename" == "opensuse-leap-"* ]]; then
+            codename="opensuse-"${codename##*-}
+        fi
+    fi
+    echo $codename
+    return 0
+}
+
+function get_kernel_version() {
+    # only major/minor is needed for version check
+    if uname -r | grep -oE  '^[0-9]+\.[0-9]+'; then 
+        return 0
+    fi
+
+    echo "Unknow kernel"
+    exit -1
+}
+
+function get_os_init_cfg() {
+    if [[ "$pkg_type" == "deb" ]]; then
+        dpkg -l | tail -n +6  | awk  '{printf "%s \n", $2}' | sed -r 's_(.+):amd64_\1_' > "$os_init_cfg"
+    else 
+        rpm -qa --qf '%{N}:%{ARCH}\n' > "$os_init_cfg"
+        if which yum 2>/dev/null; then
+            local release_tag=$(yum list | awk '{print $2}' | grep -Eo 'module\+el[0-9.+a-fA-F]+' | sort | uniq)
+            if [[ ! -z $release_tag ]]; then
+                printf "$release_tag\n" > "${os_init_cfg}-tag"
+                printf "RHEL release tag found: "
+                printf "$release_tag\n" | wc -l
+            fi
+        fi
+    fi
+    printf "OS init pkgs found: "
+    cat "$os_init_cfg" | wc -l
+    return 0
+}
+
+function get_cert_cmd_rhel() {
+    local cert_dir=$1
+
+    local private_key
+    local ca_cert
+    local cert
+    if (( $# == 0 )); then
+        # pem from local cert dir
+        [[ ! -f /etc/rhsm/ca/redhat-uep.pem ]] && { echo "cannot find ca_cert pem!"; exit -1; }
+        ca_cert="/etc/rhsm/ca/redhat-uep.pem"
+
+        [[ ! -d /etc/pki/entitlement ]] && { echo "cannot find private key and cert pem!"; exit -1; }
+        private_key=$(ls /etc/pki/entitlement/*-key.pem)
+        cert=$(ls /etc/pki/entitlement/*.pem | tr ' ' '\n' | grep -E '[0-9]+.pem')
+    else
+        # pem cached at cert_dir
+        private_key=$(ls $cert_dir/*-key.pem)
+        ca_cert="$cert_dir/redhat-uep.pem"
+        cert=$(ls $cert_dir/*.pem | tr ' ' '\n' | grep -E '[0-9]+.pem')
+    fi
+    echo "--ca-cert=${ca_cert} `
+         `--certificate=${cert} `
+         `--private-key=${private_key}"
+    return 0
+}
+
+function get_cert_cmd() {
+    if [[ $os_id == "rhel" ]]; then
+        get_cert_cmd_rhel "$@"
+    fi
+}

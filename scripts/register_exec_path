@@ -1,0 +1,25 @@
+# !bin/sh
+help() {
+    echo "$(basename $0) [-p <path> | -s]"
+    echo "specify <path>, then append to \$PATH in ~/.bashrc"
+    echo "      -p <path>: <path> specified"
+    echo "      -s: $(dirname $0) (self location)"
+    echo "      no arg: current path"
+}
+
+exec_path=$(realpath "./")
+while getopts p:sh arg
+do
+	case $arg in
+        p) exec_path=$(realpath "$OPTARG");;
+        s) exec_path=$(dirname $0 | xargs realpath);;
+		h) help
+           exit 0
+        ;;
+	esac
+done
+
+printf "append to ~/.bashrc:\n"
+printf "\nexport PATH=\$PATH:%s\n" "$exec_path" | tee -a ~/.bashrc
+printf "\nto take effect, execute:\n"
+printf "bash \n"
