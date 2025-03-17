@@ -1,0 +1,32 @@
+#!/bin/bash
+# gc protocal: gc?://<repoPath>+<commit>+[<path-to-file>]+[expand]
+function parse_url() {
+    local protocol=${1#gc*://}
+    local repoPath=$(echo $protocol | cut -d '+' -f1)
+    local commit=$(echo $protocol | cut -d '+' -f2)
+    local file=$(echo $protocol | cut -d '+' -f3)
+    local expand=$(echo $protocol | cut -d '+' -f4)
+
+    pushd $repoPath
+    if [[ -z "$file" ]]; then
+        if [[ -z "$expand" ]]; then
+            git difftool -t meld -d ${commit}~1 ${commit}
+        else
+            git show --quiet $commit
+            local fileList=$(git diff-tree --no-commit-id --name-only -r $commit)
+            echo -e "\nFiles:"
+            local f
+            for f in $fileList; do
+                echo -e "\t\e]8;;gc://${repoPath}+${commit}+${f}\a${f}\e]8;;\a";
+            done
+            read -p "presss any key to continue..." -n1 -s
+        fi
+    else
+        local file=${file#/}
+        # echo $file
+        git difftool -t vscode $commit~1 $commit -- $file
+    fi
+    popd
+}
+
+parse_url "$1"

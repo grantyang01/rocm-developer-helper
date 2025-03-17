@@ -9,11 +9,11 @@ function popd() {
 }
 
 function log() {
-    echo -e "\e[32m${SELF}- $*\e[0m" 1>&2 ; 
+    echo -e "\e[32m${SELF_TAG:-[unknown]} $*\e[0m" 1>&2 ; 
 }
 
 function die() {
-    echo -e "\e[31m${SELF}- $*\e[0m" 1>&2 ; 
+    echo -e "\e[31m${SELF_TAG:-[unknown]} $*\e[0m" 1>&2 ; 
     exit 1; 
 }
 

@@ -7,7 +7,7 @@ help() {
     echo "        0 - initialize developer tools"
     echo "        1 - deinitialize(unblock rocm pkgs, and prepare for uninstallation)"
     echo "    -c"
-    echo "        clone clr/hip/hip-tests to current directory"
+    echo "        initialize repos of clr/hip/hip-tests to current directory"
     echo "    -b"
     echo "        build and install clr/hip-tests"
     echo "    -g"
@@ -37,7 +37,7 @@ function init() {
     fi
 
     # developer tools
-    control_pkgs "cmake build-essential python3-venv git-lfs" 1
+    control_pkgs "cmake build-essential python3-venv git-lfs libboost-all-dev doxygen" 1
 
     # pkgs needed by hip-tests
     # control_pkgs "freeglut3-dev libegl1-mesa-dev:amd64 libgl1-mesa-dev:amd64" 1
@@ -80,25 +80,17 @@ function config() {
     return 0
 }
 
-function clone() {
+function setup_repos() {
     local base_dir="$1"
     local repos="$2"
-
+    local branch="$3"
     local repo    
     for repo in $repos; do
         local name=${repo%.*}
         name=${name##*/}
         local path="$BASE_DIR/$name"
-        printf "clone %s to %s ...\n" "$name" "$path"
-        if ! git clone "$repo" "$path"; then
-            die "failed to clone: $name"
-        fi
-        pushd "$path"
-        if ! git branch; then
-            die "failed to check branch: $name"
-        fi
-        log "clone successfully: $repo"
-        popd
+        log "setup <$name/$branch> at <$path> ..."
+        setup_repo "$name" "$path" "$repo" "$branch"
     done
 }
 
@@ -189,7 +181,7 @@ function build_component() {
     local component=$1
     case $component in
         clr)build_clr;;
-        test)build_hip_tests;;
+        *test*)build_hip_tests;;
         all)build_clr
             build_hip_tests;;
     esac
@@ -255,36 +247,44 @@ function parse_log() {
 # make tools available
 bin_dir=$(realpath $0|xargs dirname)
 PATH=${bin_dir}:${bin_dir}/util:$PATH
-SELF=`basename $0`
+SELF_TAG="[$(basename $0)]"
 
 # import utilities
+. tools
 . os-helper
 . package-helper
-. tools
+. git-helper
 
 # init parameters
 root_path="./"
 init_env=0
 init_stage=0
-clone_repo=0
+init_repos=0
+repo_branch=""
 build_comps=""
 generate_prof=0
 test_groups=""
 parse=0
-while getopts r:i:t:b:cgph arg
+while getopts r:i:t:b:c:gph arg
 do
 	case $arg in
-        r) root_path="$OPTARG";;
-        i) init_env=1
-           init_stage="$OPTARG";;
-        c) clone_repo=1;;
-        b) build_comps="$OPTARG";;
-        g) generate_prof=1;;
-        t) test_groups="$OPTARG";;
-        p) parse=1;;
-		h) help
-           exit 0
-        ;;
+        r)  if [[ ! -z "$OPTARG" ]]; then
+                root_path="$OPTARG"
+            else
+                root_path="./"
+            fi
+            ;;
+        i)  init_env=1
+            init_stage="$OPTARG";;
+        c)  init_repos=1
+            repo_branch=${OPTARG:-amd-staging};;
+        b)  build_comps=${OPTARG:-all};;
+        g)  generate_prof=1;;
+        t)  test_groups=${OPTARG:-all};;
+        p)  parse=1;;
+		h|*)help
+            exit 0
+            ;;
 	esac
 done
 
@@ -299,8 +299,8 @@ if (( init_env == 1 )); then
     init "$init_stage"
 fi
 
-if (( clone_repo == 1 )); then
-    clone "$BASE_DIR" "$REPOS"
+if (( init_repos == 1 )); then
+    setup_repos "$BASE_DIR" "$REPOS" "$repo_branch"
 fi
 
 if [[ ! -z "$build_comps" ]]; then

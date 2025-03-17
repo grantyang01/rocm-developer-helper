@@ -1,0 +1,47 @@
+#!/bin/bash
+# helper to identify distros
+
+function is_dir_valid_repo() {
+    local repo_dir=$1
+    if [[ ! -d "$path" ]]; then
+        return -1
+    fi
+
+    pushd $repo_dir
+    local res=-1
+    if git branch >/dev/null; then
+        res=0
+    fi
+    popd
+    return $res
+}
+
+function setup_repo() {
+    local name=$1
+    local target_path=$2
+    local url=$3
+    local branch=$4
+
+    if ! is_dir_valid_repo "$target_path"; then
+        log "clone $name to $target_path ..."
+        refresh_dir "$target_path"
+        if ! git clone "$url" "$target_path"; then
+            die "failed to clone: $name"
+        fi
+    fi
+
+    pushd "$target_path"
+    log "switch to: $branch ..."
+    if [[ ! -z "$branch" ]]; then
+        if ! git checkout "$branch"; then
+            die "failed to switch: $branch"
+        fi
+    fi
+
+    log "validate $name ..."
+    if ! git branch | grep "\* $branch" &>/dev/null; then
+        die "failed to validate: $name/$branch"
+    fi
+    popd
+    log "repo setup successfully: <$name/$branch>"
+}

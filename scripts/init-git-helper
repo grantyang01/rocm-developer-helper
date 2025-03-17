@@ -1,0 +1,97 @@
+# !bin/sh
+function init_gc_mime() {
+    # expose gc-parser
+    cat >>~/.bashrc <<EOL
+source $bin_dir/util/gc-helper
+EOL
+
+    # specifies the x-scheme-handler/... MIME type: gc
+    # gc.desktop
+    cat >~/.local/share/applications/gc.desktop <<EOL
+[Desktop Entry]
+Name=GIT‑VIEW-COMMITMENT
+Encoding=UTF-8
+Version=1.0
+Type=Application
+Terminal=true
+Exec=$bin_dir/util/parse_gc_url %u
+Comment=GIT‑COMMITMENT handler
+Icon=
+Categories=Application;Network;
+MimeType=x-scheme-handler/gc;
+EOL
+
+    # gct.desktop
+    cat >~/.local/share/applications/gct.desktop <<EOL
+[Desktop Entry]
+Name=GIT‑VIEW-COMMITMENT-FILE
+Encoding=UTF-8
+Version=1.0
+Type=Application
+Terminal=true
+Exec=$bin_dir/util/parse_gc_url %u
+Comment=GIT‑COMMITMENT-FILE handler
+Icon=
+Categories=Application;Network;
+MimeType=x-scheme-handler/gcf;
+EOL
+
+    # Build cache database of MIME types 
+    if ! update-desktop-database ~/.local/share/; then
+        die "can not build cache database of gc MIME type"
+    fi
+
+    # Register a gc protocol to MIME
+    if ! xdg-mime default gc.desktop x-scheme-handler/gc; then
+        die "failed to register gc protocol"
+    fi
+
+    if ! xdg-mime default gct.desktop x-scheme-handler/gct; then
+        die "failed to register gct protocol"
+    fi
+
+    # gc protocol registered?
+    if ! grep 'gc=gc\.desktop' ~/.config/mimeapps.list &>/dev/null; then
+        die "failed to register gc protocol"
+    fi
+
+    if ! grep 'gct=gct\.desktop' ~/.config/mimeapps.list &>/dev/null; then
+        die "failed to register gct protocol"
+    fi
+}
+
+function init_git_config() {
+    # ~/.gitconfig
+    if [[ ! -f ~/.gitconfig ]]; then
+        cat >~/.gitconfig <<EOL
+[filter "lfs"]
+	required = true
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process        
+[core]
+  editor = code --wait
+[diff]
+  tool = vscode
+[difftool "vscode"]
+  cmd = code --wait --diff $LOCAL $REMOTE
+[merge]
+  tool = vscode
+[mergetool "vscode"]
+  cmd = code --wait $MERGED
+[difftool]
+  prompt = false
+[color]
+  ui = auto
+EOL
+    fi
+}
+
+# make tools available
+SELF_TAG="[$(basename $0)]"
+bin_dir=$(realpath $0|xargs dirname)
+PATH=${bin_dir}:${bin_dir}/util:$PATH
+. tools
+
+init_gc_mime
+init_git_config
