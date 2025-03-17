@@ -1,4 +1,8 @@
 #!/bin/bash
+# call back script by gc MIME, defined at:
+#  1. ~/.local/share/applications/gc.desktop
+#  2. ~/.local/share/applications/gct.desktop
+#      Exec=$parser_path/util/parse_gc_url %u
 # gc protocal: gc?://<repoPath>+<commit>+[<path-to-file>]+[expand]
 function parse_url() {
     local protocol=${1#gc*://}
