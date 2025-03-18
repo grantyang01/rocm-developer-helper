@@ -162,30 +162,3 @@ EOL
         die "failed to register gct protocol"
     fi
 }
-
-function init_git_config() {
-    # ~/.gitconfig
-    if [[ ! -f ~/.gitconfig ]]; then
-        cat >~/.gitconfig <<EOL
-[filter "lfs"]
-	required = true
-	clean = git-lfs clean -- %f
-	smudge = git-lfs smudge -- %f
-	process = git-lfs filter-process        
-[core]
-  editor = code --wait
-[diff]
-  tool = vscode
-[difftool "vscode"]
-  cmd = code --wait --diff \$LOCAL \$REMOTE
-[merge]
-  tool = vscode
-[mergetool "vscode"]
-  cmd = code --wait \$MERGED
-[difftool]
-  prompt = false
-[color]
-  ui = auto
-EOL
-    fi
-}

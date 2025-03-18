@@ -241,7 +241,23 @@ function parse_log() {
     done
 
     printf "Ordinal,Failed/Exception\n"
-    grep -h '(SEGFAULT)\|(Failed)' $log_files | awk -F - '{printf "%d,%s\n", NR, $2}'
+    grep -h '(SEGFAULT)\|(Failed)' $log_files |`
+    `awk -F - '{printf "%d,%s\n", NR, $2}'
+
+    # test time > 10s
+    printf "Ordinal,test time > 10 secs\n"
+    grep -Eh  '[[:blank:]]+[0-9\.]+\s+sec$' $log_files |`
+    `grep "Passed\|Skipped" |`
+    `awk '
+    BEGIN { count = 0; }
+    {
+        time=$(NF-1);
+        $1=$2=$3="";
+        if (time>10) {
+            count++;
+            printf "%d,%s\n", count , $0
+        }
+    }'
 }
 
 # make tools available
