@@ -10,6 +10,11 @@ function is_pkg_installed() {
     fi
 }
 
+function get_pkg_version() {
+    local pkg="$1"
+    dpkg -l "$pkg" 2>/dev/null | awk '/ii/{print $3}'
+}
+
 function is_pkg_held() {
     local pkg="$1"
     if dpkg -l "$pkg" 2>/dev/null | grep ^hi &>/dev/null; then
@@ -66,4 +71,28 @@ function control_pkgs() {
         fi
     done
     return 0
+}
+
+function prefer_pkgs() {
+    local pkgs="$1"
+    local op="$2"
+    local prefer_file="/etc/apt/preferences.d/$3"
+
+    [[ -f "$prefer_file" ]] && sudo rm -r "$prefer_file"
+    if (( op == 1 )); then
+        local pkg
+        for pkg in $pkgs; do
+            if is_pkg_installed "$pkg"; then
+                local version=$(get_pkg_version "$pkg")
+                printf  "Package: %s\n`
+                        `Pin: version %s\n`
+                        `Pin-Priority: 600\n\n" `
+                        `"$pkg" "$version" |`
+                        `sudo tee -a "$prefer_file" $>/dev/null
+            fi
+        done
+    fi
+    if ! sudo apt-get update -y; then
+        die "failed to update repo"
+    fi
 }

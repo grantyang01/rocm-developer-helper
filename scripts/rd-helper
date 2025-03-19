@@ -28,16 +28,21 @@ function init() {
 
     local rocm_pkgs="hipcc:amd64 rocm-cmake:amd64 rocminfo:amd64"
     if (( stage == 0 )); then
-        # block rocm update from OS repo
-        control_pkgs "$rocm_pkgs" 3
+        # prefer rocm pkgs
+        prefer_pkgs "$rocm_pkgs" 1 "rocm-prefer-local-600"
     else
-        # unblock rocm pkgs, prepare for uninstallation
-        control_pkgs "$rocm_pkgs" 4
+        # unperfer rocm pkgs
+        prefer_pkgs "$rocm_pkgs" 2 "rocm-prefer-local-600"
         return 0
     fi
 
     # developer tools
     control_pkgs "cmake build-essential python3-venv git-lfs libboost-all-dev doxygen" 1
+
+    # install docker engine in host
+    install_docker_engine
+
+    exit 0
 
     # pkgs needed by hip-tests
     # control_pkgs "freeglut3-dev libegl1-mesa-dev:amd64 libgl1-mesa-dev:amd64" 1
@@ -270,6 +275,7 @@ SELF_TAG="[$(basename $0)]"
 . os-helper
 . package-helper
 . git-helper
+. docker-helper
 
 # init parameters
 root_path="./"
