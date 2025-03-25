@@ -1,12 +1,14 @@
 # !bin/sh
 help() {
-    echo "$(basename $0) [ -r <root_path> | -i <stage> | -c | -b | -g | -t | -p | -h] "
+    echo "$(basename $0) [ -r <root_path> | -i <stage> |  -c <branch> | -l | -b | -g | -t | -p | -h] "
     echo "    -r <root_path>"
     echo "        set root path of rocm src code"
+    echo "    -l "
+    echo "        use public src code repo"
     echo "    -i <stage>"
     echo "        0 - initialize developer tools"
     echo "        1 - deinitialize(unblock rocm pkgs, and prepare for uninstallation)"
-    echo "    -c"
+    echo "    -c <branch>"
     echo "        initialize repos of clr/hip/hip-tests to current directory"
     echo "    -b"
     echo "        build and install clr/hip-tests"
@@ -39,11 +41,6 @@ function init() {
     # developer tools
     control_pkgs "cmake build-essential python3-venv git-lfs libboost-all-dev doxygen" 1
 
-    # install docker engine in host
-    install_docker_engine
-
-    exit 0
-
     # pkgs needed by hip-tests
     # control_pkgs "freeglut3-dev libegl1-mesa-dev:amd64 libgl1-mesa-dev:amd64" 1
     control_pkgs "freeglut3-dev" 1
@@ -64,16 +61,19 @@ function init() {
 
 function config() {
     BASE_DIR="$1"
-    REPOS="https://github.com/ROCm/clr.git `
-          `https://github.com/ROCm/hip.git `
-          `https://github.com/ROCm/hip-tests.git"
-    local repo
-    for repo in $REPOS; do
-        local name=${repo%.*}
-        name=${name##*/}
+    local repo_url
+    if (( internal_repos == 1 )); then
+        repo_url="git@github.com:AMD-ROCm-Internal"
+    else
+        repo_url="https://github.com/ROCm"
+    fi
+
+    local projects="clr hip hip-tests"
+    local name
+    for name in $projects; do
         local name_v=${name//-} # remove - in "hip-test"
         name_v=${name_v^^} # to upper cases
-
+        REPOS="$REPOS ${repo_url}/${name}.git"
         # setup *_DIR variables
         eval ${name_v}_DIR="${BASE_DIR}/${name}"
     done
@@ -89,7 +89,8 @@ function setup_repos() {
     local base_dir="$1"
     local repos="$2"
     local branch="$3"
-    local repo    
+    local repo
+
     for repo in $repos; do
         local name=${repo%.*}
         name=${name##*/}
@@ -278,6 +279,7 @@ SELF_TAG="[$(basename $0)]"
 . docker-helper
 
 # init parameters
+internal_repos=1
 root_path="./"
 init_env=0
 init_stage=0
@@ -287,7 +289,7 @@ build_comps=""
 generate_prof=0
 test_groups=""
 parse=0
-while getopts r:i:t:b:c:gph arg
+while getopts r:i:t:b:c:lgph arg
 do
 	case $arg in
         r)  if [[ ! -z "$OPTARG" ]]; then
@@ -296,6 +298,7 @@ do
                 root_path="./"
             fi
             ;;
+        l)  internal_repos=0;;
         i)  init_env=1
             init_stage="$OPTARG";;
         c)  init_repos=1

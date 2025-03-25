@@ -1,0 +1,51 @@
+# !bin/sh
+help() {
+    echo "$(basename $0) [ -i | -n <docker image id> | -d ] "
+    echo "    -i"
+    echo "        install docker engine in host"
+    echo "    -n <docker image id>"
+    echo "        specifiy <docker image id> "
+    echo "    -d"
+    echo "        Get AMD grfx and rocm driver info"
+    echo "    -h"
+    echo "        display this message"
+    exit 0
+}
+
+# make tools available
+bin_dir=$(realpath $0|xargs dirname)
+PATH=${bin_dir}:${bin_dir}/util:$PATH
+SELF_TAG="[$(basename $0)]"
+
+# import utilities
+. tools
+. docker-helper
+
+install_engine=0
+image_id=""
+get_driver_info=0
+while getopts n:idh arg
+do
+	case $arg in
+        i)  install_engine=1;;
+        n)  image_id="$OPTARG";;
+        d)  get_driver_info=1;;
+		h|*)help
+            exit 0
+            ;;
+	esac
+done
+
+if (( install_engine == 1 )); then
+    # install docker engine in host
+    install_docker_engine
+fi
+
+if [[ -z "$image_id" ]]; then
+    die "no image id specified!"
+fi
+
+if (( get_driver_info == 1 )); then
+    get_amd_driver_info "$image_id"
+fi
+exit 0

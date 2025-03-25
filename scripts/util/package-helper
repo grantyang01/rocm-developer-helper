@@ -77,13 +77,18 @@ function prefer_pkgs() {
     local pkgs="$1"
     local op="$2"
     local prefer_file="/etc/apt/preferences.d/$3"
+    local update_repo=0
 
-    [[ -f "$prefer_file" ]] && sudo rm -r "$prefer_file"
+    if [[ -f "$prefer_file" ]]; then
+        update_repo=1
+        sudo rm -r "$prefer_file" &>/dev/null
+    fi
     if (( op == 1 )); then
         local pkg
         for pkg in $pkgs; do
-            if is_pkg_installed "$pkg"; then
-                local version=$(get_pkg_version "$pkg")
+            if is_pkg_installed_deb "$pkg"; then
+                update_repo=1
+                local version=$(get_pkg_version_deb "$pkg")
                 printf  "Package: %s\n`
                         `Pin: version %s\n`
                         `Pin-Priority: 600\n\n" `
@@ -92,7 +97,10 @@ function prefer_pkgs() {
             fi
         done
     fi
-    if ! sudo apt-get update -y; then
-        die "failed to update repo"
+    if (( update_repo == 1 )); then
+        if ! sudo apt-get update -y &>/dev/null; then
+            die "failed to update repo"
+        fi
     fi
+    return 0
 }

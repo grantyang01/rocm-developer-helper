@@ -33,3 +33,33 @@ function install_docker_engine() {
         log "doc eninge installed successfully"
     fi
 }
+
+function get_amd_driver_info() {
+    local image_id=$1
+
+    # grfx build id
+    local grfx_build=$(sudo docker run -it --rm  -a stdout --entrypoint cat  "$image_id" /etc/apt/sources.list.d/amdgpu-build.list |`
+    `awk '/^deb /{print $4}')
+
+    local ai_arguments
+    if [[ ! -z "$grfx_build" ]]; then
+        log "grfx: $grfx_build"
+        ai_arguments="-g $grfx_build"
+    fi
+
+    # rocm branch/ver
+    local rocm_build=$(sudo docker run -it --rm  -a stdout --entrypoint cat  "$image_id" /etc/apt/sources.list.d/rocm-build.list |`
+    `awk '/^deb /{printf "%s/%s\n",$5, $6}')
+
+    if [[ ! -z "$rocm_build" ]]; then
+        log "rocm: $rocm_build"
+        if [[ ! -z "$ai_arguments" ]]; then
+            ai_arguments="$ai_arguments "
+        fi
+        ai_arguments="$ai_arguments-r $rocm_build"
+    fi
+
+    if [[ ! -z "$ai_arguments" ]]; then
+        log "amdgpuInstaller argument(s): ${ai_arguments}"
+    fi
+}
