@@ -65,7 +65,7 @@ function config() {
     if (( internal_repos == 1 )); then
         repo_url="git@github.com:AMD-ROCm-Internal"
     else
-        repo_url="https://github.com/ROCm"
+        repo_url="git@github.com:ROCm"
     fi
 
     local projects="clr hip hip-tests"

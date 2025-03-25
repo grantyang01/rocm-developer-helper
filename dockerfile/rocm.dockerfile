@@ -6,4 +6,3 @@ COPY ai /app
 WORKDIR /app
 RUN ./amdgpuInstaller --modules=rocm
 CMD ["bash"]
-
