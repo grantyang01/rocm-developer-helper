@@ -19,6 +19,7 @@ SELF_TAG="[$(basename $0)]"
 
 # import utilities
 . tools
+. package-helper
 . docker-helper
 
 install_engine=0
@@ -39,6 +40,8 @@ done
 if (( install_engine == 1 )); then
     # install docker engine in host
     install_docker_engine
+    init_docker_alias
+    exit 0
 fi
 
 if [[ -z "$image_id" ]]; then

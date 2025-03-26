@@ -1,4 +1,10 @@
 #!/bin/bash
+function init_docker_alias() {
+    # expose simple command with alias
+    printf "alias dk='sudo docker'\nalias docker='sudo docker'\n" >> ~/.bashrc
+    # expose complicated cmd with functions
+    printf ". $bin_dir/util/docker-cmd-alias\n" >> ~/.bashrc
+}
 
 function install_docker_engine() {
     # install doc engine

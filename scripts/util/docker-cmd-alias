@@ -1,0 +1,30 @@
+#!/bin/bash
+# images
+function di() {
+    docker images "$@"
+}
+
+# image
+function dimg() {
+    docker image "$@"
+}
+
+# ps
+function dps() {
+    docker ps "$@"
+}
+
+# container
+function dc() {
+    docker container "$@"
+}
+
+# pull
+function dp() {
+    docker pull "$@"
+}
+
+# run
+function dr() {
+    docker run -it "$@"
+}
