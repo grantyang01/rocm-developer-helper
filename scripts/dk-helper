@@ -7,6 +7,8 @@ help() {
     echo "        specifiy <docker image id> "
     echo "    -d"
     echo "        Get AMD grfx and rocm driver info"
+    echo "    -c"
+    echo "        clean up"
     echo "    -h"
     echo "        display this message"
     exit 0
@@ -25,12 +27,14 @@ SELF_TAG="[$(basename $0)]"
 install_engine=0
 image_id=""
 get_driver_info=0
-while getopts n:idh arg
+while getopts n:idch arg
 do
 	case $arg in
         i)  install_engine=1;;
         n)  image_id="$OPTARG";;
         d)  get_driver_info=1;;
+        c)  clean
+            exit 0;;
 		h|*)help
             exit 0
             ;;

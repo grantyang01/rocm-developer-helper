@@ -1,0 +1,142 @@
+{
+    "version": "2.0.0",
+    // tasks: build , run
+    "tasks": [
+        {
+            "label": "build: rocm-ai-ubuntu-24.04",
+            "type": "docker-build",
+            "dockerBuild": {
+                "context": "${workspaceFolder}",
+                "dockerfile": "${workspaceFolder}/rocm-ai-ubuntu.dockerfile",
+                "tag": "rocm-ai-ubuntu-24.04:1.0",
+                "buildArgs": {
+                    "UBUNTU_VERSION": "24.04"
+                }
+            }
+        },
+        {
+            "label": "build: rocm-ai-ubuntu-22.04",
+            "type": "docker-build",
+            "dockerBuild": {
+                "context": "${workspaceFolder}",
+                "dockerfile": "${workspaceFolder}/rocm-ai-ubuntu.dockerfile",
+                "tag": "rocm-ai-ubuntu-22.04:1.0",
+                "buildArgs": {
+                    "UBUNTU_VERSION": "22.04"
+                }
+            }
+        },
+        {
+            "label": "run: rocm-ai-ubuntu-24.04:1.0",
+            "type": "docker-run",
+            "dockerRun": {
+                "image": "rocm-ai-ubuntu-24.04:1.0",
+                "containerName": "rocm-ai-ubuntu-24.04",
+                "customOptions": "--device /dev/kfd --device /dev/dri/renderD128"
+            }
+        },
+        {
+            "label": "run: rocm-ai-ubuntu-22.04:1.0",
+            "type": "docker-run",
+            "dockerRun": {
+                "image": "rocm-ai-ubuntu-22.04:1.0",
+                "containerName": "rocm-ai-ubuntu-22.04",
+                "customOptions": "--device /dev/kfd --device /dev/dri/renderD128"
+            }
+        },
+        {
+            "label": "build: rocm-ai-ubuntu-general",
+            "type": "docker-build",
+            "dockerBuild": {
+                "context": "${workspaceFolder}",
+                "dockerfile": "${workspaceFolder}/rocm-ai-ubuntu.dockerfile",
+                "tag": "rocm-ai-ubuntu-${input:UbuntuVersion}:${input:ImageTag}",
+                "buildArgs": {
+                    "UBUNTU_VERSION": "${input:UbuntuVersion}"
+                }
+            }
+        },
+        {
+            "label": "run: rocm-ai-ubuntu-general",
+            "type": "docker-run",
+            "dockerRun": {
+                "image": "rocm-ai-ubuntu-${input:UbuntuVersion}:${input:ImageTag}",
+                "containerName": "rocm-ai-ubuntu-${input:UbuntuVersion}",
+                "customOptions": "--device /dev/kfd --device /dev/dri/renderD128"
+            }
+        },
+        {
+            "label": "build: add usr and enable ssh ",
+            "type": "docker-build",
+            "dockerBuild": {
+                "context": "${workspaceFolder}",
+                "dockerfile": "${workspaceFolder}/enable-ssh.dockerfile",
+                "tag": "${input:ImageName}-dbg:${input:ImageTag}",
+                "buildArgs": {
+                    "IMAGE_NAME": "${input:ImageName}",
+                    "IMAGE_TAG": "${input:ImageTag}",
+                    "USER": "${input:DockerUser}",
+                    "UPWD": "${input:Password}",
+                    "UBUNTU_VERSION": "${input:UbuntuVersion}"
+                }
+            }
+        },
+        {
+            "label": "run: dbg image",
+            "type": "docker-run",
+            "dockerRun": {
+                "image": "${input:DbgImageName}",
+                "containerName": "rocm-ai-ubuntu-dbg",
+                "customOptions": "-p 2222:22 --device /dev/kfd --device /dev/dri/renderD128"
+            }
+        },
+
+    ],
+ 
+    // inputs 
+    "inputs": [
+        // ubuntu version 
+        {
+          "id": "UbuntuVersion",
+          "type": "pickString",
+          "description": "Choose an Ubuntu Version:", 
+          "options": ["24.04", "22.04"],
+          "default": "24.04"
+        },
+        // image name
+        {
+            "id": "ImageName",
+            "type": "promptString",
+            "description": "Enter a image name:",
+            "default": "rocm-ai-ubuntu-24.04"
+        },
+        // image tag
+        {
+            "id": "ImageTag",
+            "type": "promptString",
+            "description": "Enter a image tag:",
+            "default": "1.0"
+        },
+        // docker user
+        {
+            "id": "DockerUser",
+            "type": "promptString",
+            "description": "Enter a user inside container:",
+            "default": "du"
+        },
+        // docker user password
+        {
+            "id": "Password",
+            "type": "promptString",
+            "description": "Enter a password:",
+            "default": "du"
+        },
+        // dbg image name
+        {
+            "id": "DbgImageName",
+            "type": "promptString",
+            "description": "Enter a dbg image name:",
+            "default": "rocm-ai-ubuntu-24.04-dbg:1.0"
+        },
+    ]
+}

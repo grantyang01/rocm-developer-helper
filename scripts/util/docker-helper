@@ -38,6 +38,11 @@ function install_docker_engine() {
     else
         log "doc eninge installed successfully"
     fi
+
+    # add $USER to docker group to use docker on Linux without sudo
+    if ! sudo usermod -aG docker $USER; then
+        die "failed to add $USER to group docker"
+    fi
 }
 
 function get_amd_driver_info() {
@@ -68,4 +73,27 @@ function get_amd_driver_info() {
     if [[ ! -z "$ai_arguments" ]]; then
         log "amdgpuInstaller argument(s): ${ai_arguments}"
     fi
+}
+
+function clean() {
+    # stopped container
+    docker container prune -f
+
+    # remove dangling images
+    local images=$(docker images -f "dangling=true" -q)
+    if [ ! -z "$images" ]; then
+        docker rmi $images
+    fi
+
+    # remove unused volume
+    docker volume prune -f
+
+    # remove unused network
+    docker network prune -f
+
+    # 
+    docker system prune -f
+
+    # remove build caches
+    docker builder prune -f
 }

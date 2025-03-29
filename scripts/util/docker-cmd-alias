@@ -28,3 +28,8 @@ function dp() {
 function dr() {
     docker run -it "$@"
 }
+
+# exec
+function de() {
+    docker exec -it "$@"
+}
