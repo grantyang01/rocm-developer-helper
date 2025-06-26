@@ -1,0 +1,26 @@
+#!/usr/bin/bash
+# run in host
+# make tools available
+bin_dir=$(realpath $0|xargs dirname)
+util_dir=$(dirname $bin_dir)/scripts/util
+PATH=${bin_dir}:${util_dir}:$PATH
+SELF_TAG="[$(basename $0)]"
+
+# import tools
+source tools
+source s-config
+
+docker run -it --rm `
+        `-v ${HOME}/work/il/SHISA_min:/SHISA/. `
+        `-v ${HOME}/work:${HOME}/work `
+        `-v ${HOME}/work/vscode-server:/root/.vscode-server `
+        `-w ${HOME}/work `
+        `-p 127.0.0.1:9346:9339 `
+        `--device=/dev/kfd `
+        `--device=/dev/dri `
+        `--name $instance_name `
+        `$image_name
+
+if (( $? != 0 )); then
+    die "fail to run: $image_name"
+fi

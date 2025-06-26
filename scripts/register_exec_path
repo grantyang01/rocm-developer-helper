@@ -12,7 +12,9 @@ while getopts p:sh arg
 do
 	case $arg in
         p) exec_path=$(realpath "$OPTARG");;
-        s) exec_path=$(dirname $0 | xargs realpath);;
+        s) exec_path=$(dirname $0 | xargs realpath)
+           exec_path=$exec_path:$exec_path/util:$(dirname $exec_path)/shisa
+           ;;
 		h) help
            exit 0
         ;;

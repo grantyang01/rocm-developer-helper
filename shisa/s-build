@@ -1,0 +1,27 @@
+#!/usr/bin/bash
+# run in host
+# create docker image: shisa-docker-<rocm version>
+# make tools available
+bin_dir=$(realpath $0|xargs dirname)
+util_dir=$(dirname $bin_dir)/scripts/util
+PATH=${bin_dir}:${util_dir}:$PATH
+SELF_TAG="[$(basename $0)]"
+
+# import tools
+source tools
+source s-config
+
+# dockerfile
+docker_file="$(dirname $bin_dir)/dockerfile/shisa.dockerfile"
+
+# docker build
+log "docker build: $image_name"
+if ! docker build -t "$image_name" `
+                 `-f $docker_file `
+                 `--build-arg ROCM_VERSION=$rocm_version `
+                 `--build-arg ROCM_OS_VERSION=$rocm_os_version `
+                 `--build-arg SP3_ASIC=$SP3_ASIC `
+                 `--build-arg TT_OPTS="$TT_OPTS" .; then
+    die "fail to build: $image_name"
+fi
+log "docker build success: $image_name"

@@ -1,0 +1,8 @@
+#!/usr/bin/bash
+rocm_version=6.4.1
+rocm_os_version=22.04
+image_name=shisa-ubuntu-$rocm_os_version-rocm-$rocm_version
+instance_name=shisa
+
+SP3_ASIC=MI350
+TT_OPTS="-a GFX9"

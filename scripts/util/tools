@@ -20,7 +20,10 @@ function die() {
 function refresh_dir() {
     local DIR="$1"
     [[ -d "$DIR" ]] && rm -rf "$DIR"
-    mkdir -p "$DIR"
+    if ! mkdir -p "$DIR"; then
+        return 1
+    fi
+    return 0
 }
 
 function validate_url(){

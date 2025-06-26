@@ -1,0 +1,16 @@
+#!/usr/bin/bash
+# run in host
+# make tools available
+bin_dir=$(realpath $0|xargs dirname)
+util_dir=$(dirname $bin_dir)/scripts/util
+PATH=${bin_dir}:${util_dir}:$PATH
+SELF_TAG="[$(basename $0)]"
+
+# import tools
+source tools
+source s-config
+
+docker exec -it $instance_name bash
+if (( $? != 0 )); then
+    die "fail to enter: $image_name - $instance_name"
+fi

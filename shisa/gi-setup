@@ -1,0 +1,123 @@
+#!/usr/bin/bash
+# run inside docker instance of "gpu-interface-build"
+# make tools available
+bin_dir=$(realpath $0|xargs dirname)
+util_dir=$(dirname $bin_dir)/scripts/util
+PATH=${bin_dir}:${util_dir}:$PATH
+SELF_TAG="[$(basename $0)]"
+
+# import tools
+source tools
+source gi-config
+source cmake-helper
+
+function setup_rocr() {
+    local target=$1
+
+    # clone source
+    if ! refresh_dir "$target"; then
+        die "fail to create: $target"
+    fi
+
+    if ! git clone https://github.com/RadeonOpenCompute/ROCR-Runtime -b rocm-$rocm_version $target; then
+        die "fail to clone ROCR-Runtime"
+    fi
+
+    # Do not check start timestamp validity in hsa_amd_profiling_get_dispatch_time because it can be buggy with multiple Submit() calls
+    # Keep the check for the end timestamp, which is what HsaDriver reads and which works correctly in testing
+    sed -i 's/(start == 0) || (end == 0) || (start < t0_.GPUClockCounter)/(end == 0)/' $target/runtime/hsa-runtime/core/runtime/amd_gpu_agent.cpp
+
+    # build
+    if ! cmake_build $target "all" -DBUILD_SHARED_LIBS=OFF -DClang_DIR=/opt/rocm/lib/llvm/lib/cmake/clang; then 
+        die "fail: build $dir"
+    fi
+
+    # target: libhsa-runtime64.a
+    log "results:"
+    find "$target" -name "libhsa-runtime64.a"
+    return 0
+}
+
+function setup_gi() {
+    local target=$1
+    local rocr_path=$2
+
+    if ! refresh_dir "$target"; then
+        die "fail to create: $target"
+    fi
+
+    # setup PAT 
+    if ! git config --global credential.helper store; then
+        die "fail: git credential store"
+    fi
+
+    if ! git clone --recurse-submodules https://$user:$pat@github.amd.com/LibAmd/SHISA_gpu_interface $target; then
+        die "fail to clone: https://$user:$pat@github.amd.com/LibAmd/SHISA_gpu_interface"
+    fi
+
+    pushd $target
+    # apply patch to pal_navi 
+    cd pal_navi
+    if ! git apply ../0001-PAL_CLIENT_SHISA.pal_navi.patch; then
+        die "fail: apply navi patch to pal_navi"
+    else
+        git status
+    fi
+    # fix an syntax error
+    sed -i 's/\(: Queue(rhs\.\)allocCb\()\)/\1m_allocCb\2/' ./shared/devdriver/shared/legacy/inc/util/queue.h
+
+    # apply patch to pal_vega
+    cd ../pal_vega
+    if ! git apply ../0001-PAL_CLIENT_SHISA.pal_vega.patch; then
+        die "fail: apply vega patch to pal_vega"
+    else
+        git status
+    fi
+
+    # init drivers
+    cd ..
+    if ! git init drivers; then
+        die "fail to init drivers"
+    fi
+    cd drivers
+    
+    if ! git sparse-checkout set drivers/pxproxy drivers/inc/asic_reg drivers/inc/shared drivers/dx/dxx/vam; then
+        die "fail to sparse-checkout from drivers"
+    fi
+
+    if ! git remote add origin https://github.amd.com/AMD-Radeon-Driver/drivers.git; then
+        die "fail to add origin repo"
+    fi
+
+    if ! git pull --depth 1 origin amd/release/23.30; then
+        die "fail to pull amd/release/23.30 from drivers"
+    fi
+    mv drivers/pxproxy drivers/inc drivers/dx/dxx/vam .
+    cd ..
+
+    # patch amd_comgr.h
+    if [ ! -f /opt/rocm-$rocm_version/include/amd_comgr/amd_comgr.h ]; then
+        die "file not exist: /opt/rocm-$rocm_version/include/amd_comgr/amd_comgr.h"
+    fi
+    cp /opt/rocm-$rocm_version/include/amd_comgr/amd_comgr.h ./external/amd_comgr
+
+    export SHISA=$(pwd)
+    # release 
+    cmake_build . `
+                `Release `
+                `-DGPU_INTERFACE_PAL_SUPPORT=ON `
+                `-DGPU_INTERFACE_HSA_SUPPORT=ON `
+                `-DHSA_STATIC_LIBRARY=${rocr_path}/build/runtime/hsa-runtime/libhsa-runtime64.a
+    # debug
+    cmake_build . `
+                `Debug `
+                `-DGPU_INTERFACE_PAL_SUPPORT=ON `
+                `-DGPU_INTERFACE_HSA_SUPPORT=ON `
+                `-DHSA_STATIC_LIBRARY=${rocr_path}/build-dbg/runtime/hsa-runtime/libhsa-runtime64.a
+
+    popd
+    return 0
+}
+
+setup_rocr rocr
+setup_gi gpu_interface "$(realpath rocr)"

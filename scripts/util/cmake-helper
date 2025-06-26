@@ -1,0 +1,37 @@
+#!/bin/bash
+
+function cmake_build() {
+    local src=$1
+    local build_type=$2
+    local extra_options="${@:3}"
+    
+    if [[ "${build_type,,}" == debug || "${build_type,,}" == dbg ]]; then
+        builds=Debug
+    elif [[ "${build_type,,}" == release || "${build_type,,}" == rel ]]; then
+        builds=Release
+    elif [[ "${build_type,,}" == all ]]; then
+        builds="Debug Release"
+    else
+        die "unknown build_type: $build_type"
+    fi
+
+    for build in $builds; do
+        log "build $build: $src"
+        local dbg_option="-D CMAKE_BUILD_TYPE=$build"
+        local target
+        if [[ "$build" == "Debug" ]]; then
+            target="$src/build-dbg"
+        else
+            target="$src/build"
+        fi
+
+        refresh_dir "$target"
+        if ! cmake -S "$src" -B "$target" $dbg_option $extra_options; then
+            die "fail: cmake $target"
+        fi
+
+        if ! cmake --build "$target" -j $(nproc); then
+            die "fail: make $target"
+        fi
+    done
+}

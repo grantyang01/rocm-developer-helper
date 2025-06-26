@@ -1,0 +1,10 @@
+#!/usr/bin/bash
+rocm_version=6.4.1
+rocm_os_version=22.04
+image_name=gpu-interface-ubuntu-$rocm_os_version-rocm-$rocm_version
+instance_name=gi
+# PAT should be updated per month: https://github.amd.com
+user=gryang
+pat="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"
+
+

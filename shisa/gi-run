@@ -1,0 +1,29 @@
+#!/usr/bin/bash
+# run in host
+# make tools available
+bin_dir=$(realpath $0|xargs dirname)
+util_dir=$(dirname $bin_dir)/scripts/util
+PATH=${bin_dir}:${util_dir}:$PATH
+SELF_TAG="[$(basename $0)]"
+
+# import tools
+source tools
+source gi-config
+
+# launch gpu interface
+docker run -it --rm `
+        `-v ${HOME}/work:${HOME}/work `
+        `-v ${HOME}/work/.ssh:/root/.ssh `
+        `-v ${HOME}/work/vscode-server:/root/.vscode-server `
+        `--device=/dev/kfd `
+        `--device=/dev/dri `
+        `-w ${HOME}/work/il/ `
+        `--group-add video `
+        `--cap-add=SYS_PTRACE `
+        `--security-opt seccomp=unconfined `
+        `--name $instance_name `
+        `$image_name
+
+if (( $? != 0 )); then
+    die "fail to run: $image_name"
+fi

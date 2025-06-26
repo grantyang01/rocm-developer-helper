@@ -1,0 +1,25 @@
+#!/bin/bash
+# run inside shisa-dokcer
+# make tools available
+bin_dir=$(realpath $0|xargs dirname)
+util_dir=$(dirname $bin_dir)/scripts/util
+PATH=${bin_dir}:${util_dir}:$PATH
+SELF_TAG="[$(basename $0)]"
+
+# import tools
+source tools
+source cmake-helper
+
+build_list="test_apps/conv_test `
+           `test_apps/misa_conv_test `
+           `tools/shader_build `
+           `sp3/backend_v3 `
+           `sp3/hardened_v2 "
+
+for target in $build_list; do
+    log "======================== build $target =========================="
+    if ! cmake_build $target "all"; then 
+        die "fail: build $target"
+    fi
+    log "==================== build $target: success ====================="
+done
