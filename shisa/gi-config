@@ -5,6 +5,6 @@ image_name=gpu-interface-ubuntu-$rocm_os_version-rocm-$rocm_version
 instance_name=gi
 # PAT should be updated per month: https://github.amd.com
 user=gryang
-pat="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"
+# pat="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"
 
 
