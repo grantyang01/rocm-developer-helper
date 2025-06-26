@@ -1,5 +1,4 @@
 #!/usr/bin/bash
-# run in host
 # make tools available
 bin_dir=$(realpath $0|xargs dirname)
 util_dir=$(dirname $bin_dir)/scripts/util
@@ -8,10 +7,18 @@ SELF_TAG="[$(basename $0)]"
 
 # import tools
 source tools
+source docker-helper
 source gi-config
+
+# run at host
+if is_inside_docker; then
+    die "fail: cannot run inside docker!"
+fi
 
 # launch gpu interface
 docker run -it --rm `
+        `-v ${HOME}/work/il/SHISA_min:/SHISA/. `
+        `-e SHISA=/SHISA `
         `-v ${HOME}/work:${HOME}/work `
         `-v ${HOME}/work/.ssh:/root/.ssh `
         `-v ${HOME}/work/vscode-server:/root/.vscode-server `
@@ -22,6 +29,8 @@ docker run -it --rm `
         `--cap-add=SYS_PTRACE `
         `--security-opt seccomp=unconfined `
         `--name $instance_name `
+        `--hostname $instance_name `
+        `-e CONTAINER_NAME=$instance_name `
         `$image_name
 
 if (( $? != 0 )); then

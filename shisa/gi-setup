@@ -1,5 +1,4 @@
 #!/usr/bin/bash
-# run inside docker instance of "gpu-interface-build"
 # make tools available
 bin_dir=$(realpath $0|xargs dirname)
 util_dir=$(dirname $bin_dir)/scripts/util
@@ -9,6 +8,7 @@ SELF_TAG="[$(basename $0)]"
 # import tools
 source tools
 source gi-config
+source docker-helper
 source cmake-helper
 
 function setup_rocr() {
@@ -28,13 +28,12 @@ function setup_rocr() {
     sed -i 's/(start == 0) || (end == 0) || (start < t0_.GPUClockCounter)/(end == 0)/' $target/runtime/hsa-runtime/core/runtime/amd_gpu_agent.cpp
 
     # build
-    if ! cmake_build $target "all" -DBUILD_SHARED_LIBS=OFF -DClang_DIR=/opt/rocm/lib/llvm/lib/cmake/clang; then 
+    if ! cmake_build $target `
+                    `all `
+                    `-DBUILD_SHARED_LIBS=OFF `
+                    `-DClang_DIR=/opt/rocm/lib/llvm/lib/cmake/clang; then 
         die "fail: build $dir"
     fi
-
-    # target: libhsa-runtime64.a
-    log "results:"
-    find "$target" -name "libhsa-runtime64.a"
     return 0
 }
 
@@ -46,13 +45,14 @@ function setup_gi() {
         die "fail to create: $target"
     fi
 
-    # setup PAT 
+    # setup to store pat 
     if ! git config --global credential.helper store; then
         die "fail: git credential store"
     fi
 
-    if ! git clone --recurse-submodules https://$user:$pat@github.amd.com/LibAmd/SHISA_gpu_interface $target; then
-        die "fail to clone: https://$user:$pat@github.amd.com/LibAmd/SHISA_gpu_interface"
+    # clone gpu_interface and sub modules(pal_navi, pal_vega)
+    if ! git clone --recurse-submodules https://$gh_user:$pat@github.amd.com/LibAmd/SHISA_gpu_interface $target; then
+        die "fail to clone: https://$gh_user:$pat@github.amd.com/LibAmd/SHISA_gpu_interface"
     fi
 
     pushd $target
@@ -63,7 +63,8 @@ function setup_gi() {
     else
         git status
     fi
-    # fix an syntax error
+
+    # fix syntax errors in pal_navi/shared/devdriver/shared/legacy/inc/util/queue.h
     sed -i 's/\(: Queue(rhs\.\)allocCb\()\)/\1m_allocCb\2/' ./shared/devdriver/shared/legacy/inc/util/queue.h
 
     # apply patch to pal_vega
@@ -74,7 +75,7 @@ function setup_gi() {
         git status
     fi
 
-    # init drivers
+    # clone dependency: ./drivers at https://github.amd.com/AMD-Radeon-Driver/drivers.git
     cd ..
     if ! git init drivers; then
         die "fail to init drivers"
@@ -101,23 +102,39 @@ function setup_gi() {
     fi
     cp /opt/rocm-$rocm_version/include/amd_comgr/amd_comgr.h ./external/amd_comgr
 
-    export SHISA=$(pwd)
     # release 
-    cmake_build . `
+    if ! cmake_build . `
                 `Release `
                 `-DGPU_INTERFACE_PAL_SUPPORT=ON `
                 `-DGPU_INTERFACE_HSA_SUPPORT=ON `
-                `-DHSA_STATIC_LIBRARY=${rocr_path}/build/runtime/hsa-runtime/libhsa-runtime64.a
+                `-DHSA_STATIC_LIBRARY=${rocr_path}/build/runtime/hsa-runtime/libhsa-runtime64.a; then
+        die "fail: build release gpu_interface"
+    fi
+
     # debug
-    cmake_build . `
+    if ! cmake_build . `
                 `Debug `
                 `-DGPU_INTERFACE_PAL_SUPPORT=ON `
                 `-DGPU_INTERFACE_HSA_SUPPORT=ON `
-                `-DHSA_STATIC_LIBRARY=${rocr_path}/build-dbg/runtime/hsa-runtime/libhsa-runtime64.a
+                `-DHSA_STATIC_LIBRARY=${rocr_path}/build-dbg/runtime/hsa-runtime/libhsa-runtime64.a; then
+        die "fail: build debug gpu_interface"
+    fi
 
     popd
-    return 0
 }
+
+# run inside docker instance of $instance_name
+if ! is_docker_instance $instance_name; then
+    die "fail: please run it at instance: $instance_name"
+fi
 
 setup_rocr rocr
 setup_gi gpu_interface "$(realpath rocr)"
+
+# libhsa-runtime64.a
+log "======================results: rocr=================="
+find rocr -name "libhsa-runtime64.a" | xargs realpath
+
+# libgpu_interface.11.so
+log "======================results: gpu_interface=================="
+find "$SHISA" -name "libgpu_interface.11.so"

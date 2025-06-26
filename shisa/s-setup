@@ -1,5 +1,4 @@
 #!/bin/bash
-# run inside shisa-dokcer
 # make tools available
 bin_dir=$(realpath $0|xargs dirname)
 util_dir=$(dirname $bin_dir)/scripts/util
@@ -8,7 +7,14 @@ SELF_TAG="[$(basename $0)]"
 
 # import tools
 source tools
+source docker-helper
 source cmake-helper
+source s-config
+
+# run inside docker instance of $instance_name
+if ! is_docker_instance $instance_name; then
+    die "fail: please run it at instance: $instance_name"
+fi
 
 build_list="test_apps/conv_test `
            `test_apps/misa_conv_test `

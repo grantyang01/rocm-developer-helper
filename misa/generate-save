@@ -1,0 +1,43 @@
+#!/bin/bash
+
+SP3DIR=misa_new_sp3
+MISADIR=misa_new
+
+mkdir -p $SP3DIR
+curr=1
+for d in fwd bwd wrw
+do
+  for t in fp32 fp16 bf16
+  do
+    CONFDIR=$MISADIR/${d}_${t}
+    mkdir -p $CONFDIR
+    echo "======================================="
+    echo "$curr. ${d}_${t}"
+    (( curr = curr + 1))
+
+    if ! python3 igemm_codegen.py config/igemm_${d}_gtc_gfx950_nhwc_${t}.config; then
+      echo "failed to build igemm_${d}_gtc_gfx950_nhwc_${t}.config"
+      exit -1
+    fi
+    cp out/* $CONFDIR/
+    
+    if ! perl -S misa2sp3.pl -o misa_new_sp3 $CONFDIR/igemm_${d}_gtc_gfx950_nhwc_${t}.s; then
+      echo "failed to misa_new_sp3 $CONFDIR/igemm_${d}_gtc_gfx950_nhwc_${t}.s"
+      exit -1
+    fi
+  done
+done
+
+curr=1
+for i in $SP3DIR/igemm*.sp3
+do
+  p=`echo $i | sed -e 's/\.sp3$//'`
+  echo "$curr. $p"
+  if ! /SHISA/bin/sp3elf -a MI350 --abi HSA -o ${p}.elf $i > /dev/null; then
+    echo "failed to sp3elf: $i"
+    #/SHISA/bin/sp3elf -a MI300 --abi HSA -o ${p}.elf $i  
+    exit -1
+  fi
+  (( curr = curr + 1))
+done
+cp misa_util_sp3/* $SP3DIR

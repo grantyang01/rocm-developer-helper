@@ -8,14 +8,10 @@ SELF_TAG="[$(basename $0)]"
 # import tools
 source tools
 source docker-helper
-source s-config
 
-# run at host
+# run inside docker
 if is_inside_docker; then
-    die "fail: cannot run inside docker!"
-fi
-
-docker exec -it $instance_name bash
-if (( $? != 0 )); then
-    die "fail to enter: $image_name - $instance_name"
+    log "container: $(hostname)"
+else
+    log "host: $HOSTNAME"
 fi

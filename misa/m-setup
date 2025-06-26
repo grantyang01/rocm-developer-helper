@@ -1,0 +1,54 @@
+#!/bin/bash
+# make tools available
+bin_dir=$(realpath $0|xargs dirname)
+util_dir=$(dirname $bin_dir)/scripts/util
+shisa_dir=$(dirname $bin_dir)/shisa
+PATH=${bin_dir}:${util_dir}:${shisa_dir}:$PATH
+SELF_TAG="[$(basename $0)]"
+
+# import tools
+source tools
+source docker-helper
+source s-config
+source m-config
+
+function setup_misa() {
+    local target=$1
+
+    # clone misa branch $misa_branch
+    if ! refresh_dir "$target"; then
+        die "fail to create: $target"
+    fi
+
+    if ! git clone git@github.com:Kirpich30000/MISA.git -b "$misa_branch" "$target"; then
+        die "fail: clone misa branch $misa_branch"
+    fi
+
+    # patch half.hpp
+    local half_version=1.12.0
+    local half_path=half-${half_version}
+    local half_file=${half_version}.tar.gz
+    if ! wget https://github.com/pfultz2/half/archive/$half_file; then
+        die "fail:  download $half_file"
+    fi
+
+    if ! tar -zvxf $half_file; then
+        die "fail: extract $half_file"
+    fi
+    rm $half_file
+
+    if ! cp "$half_path/include/half.hpp" "$target/driver/"; then
+        die "fail: cp  half.hpp to $target/driver/"
+    fi
+}
+
+# run at host
+if is_inside_docker; then
+    die "fail: cannot run inside docker!"
+fi
+
+# setup misa source code
+misa_root=$(realpath .)/$misa_branch
+
+# todo: patch misa2sp3.pl
+setup_misa "$misa_root"

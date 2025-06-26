@@ -1,0 +1,8 @@
+#!/usr/bin/bash
+# branch of git@github.com:Kirpich30000/MISA.git
+misa_branch=fix_wrw_applicability
+# root of shisa source code 
+shisa_src_root=/home/gryang/work/il/SHISA_stg
+shisa_bin_root=/home/gryang/work/il/SHISA_min
+# work directory
+work_root="./work_dir"

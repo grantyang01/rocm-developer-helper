@@ -3,3 +3,7 @@ rocm_version=6.4.1
 rocm_os_version=22.04
 image_name=gpu-interface-ubuntu-$rocm_os_version-rocm-$rocm_version
 instance_name=gi
+
+# user and PAT to access https://github.amd.com/LibAmd/SHISA_gpu_interface
+gh_user=gryang
+pat=

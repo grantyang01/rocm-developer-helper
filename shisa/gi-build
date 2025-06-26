@@ -1,5 +1,4 @@
 #!/usr/bin/bash
-# run in host
 # create docker image to for gpu interface build
 # make tools available
 bin_dir=$(realpath $0|xargs dirname)
@@ -9,7 +8,13 @@ SELF_TAG="[$(basename $0)]"
 
 # import tools
 source tools
+source docker-helper
 source gi-config
+
+# run at host
+if is_inside_docker; then
+    die "fail: cannot run inside docker!"
+fi
 
 # dockerfile
 docker_file="$(dirname $bin_dir)/dockerfile/gpu_interface.dockerfile"

@@ -1,5 +1,4 @@
 #!/usr/bin/bash
-# run in host
 # make tools available
 bin_dir=$(realpath $0|xargs dirname)
 util_dir=$(dirname $bin_dir)/scripts/util
@@ -8,7 +7,13 @@ SELF_TAG="[$(basename $0)]"
 
 # import tools
 source tools
+source docker-helper
 source gi-config
+
+# run at host
+if is_inside_docker; then
+    die "fail: cannot run inside docker!"
+fi
 
 docker exec -it $instance_name bash
 if (( $? != 0 )); then
