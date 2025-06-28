@@ -12,8 +12,8 @@ source docker-helper
 source s-config
 source m-config
 
-function generate_misa() {
-    local misa_root=$1
+function generate_misa_942() {
+    local misa_root="$(realpath .)/$misa_branch"
     local misa_conv_test_root="${shisa_src_root}/test_apps/misa_conv_test"
     local work_dir="$(realpath $work_root)"
 
@@ -25,7 +25,6 @@ function generate_misa() {
     local dir
     local type
 
-#: << comment
     for dir in fwd bwd wrw; do
         for type in fp32 fp16 bf16; do
             local conf_dir=$misa_dir/${dir}_${type}
@@ -53,7 +52,6 @@ function generate_misa() {
             fi
         done
     done
-#comment
 
     cp ${misa_conv_test_root}/misa_util_sp3/* "$sp3_dir"
     curr=1
@@ -67,13 +65,73 @@ function generate_misa() {
         fi
         (( curr = curr + 1))
     done
-
 }
 
-# run at host
-# if is_inside_docker; then
-#    die "fail: cannot run inside docker!"
-#fi
+function generate_misa_950() {
+    local misa_root="$(realpath .)/$misa_branch"
+    local misa_conv_test_root="${shisa_src_root}/test_apps/misa_conv_test"
+    local work_dir="$(realpath $work_root)"
+
+    local sp3_dir="$work_dir/misa_new_sp3"
+    local misa_dir="$work_dir/misa_new"
+
+    mkdir -p $sp3_dir
+    local curr=1
+    local dir
+    local type
+
+    for dir in fwd bwd wrw; do
+        for type in fp32 fp16 bf16; do
+            local conf_dir=$misa_dir/${dir}_${type}
+            mkdir -p $conf_dir
+            log "======================================="
+            log "$curr. ${dir}_${type}"
+            (( curr = curr + 1))
+
+            local tool_codegen="${misa_root}/igemm_codegen.py"
+            local kernel="igemm_${dir}_gtc_${GFX_VERSION}_nhwc_${type}"
+            local config="${misa_root}/config/${kernel}.config"
+
+            # igemm_codegen.py can only work inside $misa_root
+            pushd "$misa_root"
+            if ! python3 "$tool_codegen"  "$config"; then
+                die "fail: build\n     $tool_codegen $config"
+            fi
+            cp out/* $conf_dir/
+            popd
+
+            local tool_misa2sp3="${misa_conv_test_root}/scripts/misa2ssp.pl"
+            local asm_file="$conf_dir/${kernel}.s"
+            if ! perl -S "${tool_misa2sp3}" -o "$sp3_dir" "$asm_file"; then
+                die "fail: misa to sp3 $asm_file"
+            fi
+        done
+    done
+
+    cp ${misa_conv_test_root}/misa_util_sp3/* "$sp3_dir"
+    curr=1
+    local ssp_file
+    for ssp_file in $sp3_dir/igemm*.ssp $sp3_dir/zero_mem*.sp3 $sp3_dir/tensor_cast*.sp3; do
+        local base_path=${ssp_file%.*}
+        local base_name=${base_path##*/}
+        echo "$curr. $base_name"
+        if ! "${shisa_bin_root}/bin/shader_build" "$ssp_file" -a "$SP3_ASIC" --elf-abi HSA --elf-out ${base_path}.elf  > /dev/null; then
+            die "fail to build: \n ${shisa_bin_root}/bin/shader_build $ssp_file -a $SP3_ASIC --elf-abi HSA --elf-out ${base_path}.elf"
+        fi
+        (( curr = curr + 1))
+    done
+}
+
+# run inside docker instance of $instance_name
+if ! is_docker_instance $instance_name; then
+    die "fail: please run it at instance: $instance_name"
+fi
 
 # generate misa shader
-generate_misa "$(realpath .)/$misa_branch"
+case ${GFX_VERSION} in
+    gfx950)
+        generate_misa_950;;
+    gfx942)
+        generate_misa_942;;
+    *)die "fail: unknown ${GFX_VERSION}";;
+esac

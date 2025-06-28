@@ -42,7 +42,6 @@ function setup_misa() {
     fi
 }
 
-# run at host
 if is_inside_docker; then
     die "fail: cannot run inside docker!"
 fi

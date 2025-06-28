@@ -1,0 +1,38 @@
+#!/bin/bash
+# make tools available
+bin_dir=$(realpath $0|xargs dirname)
+util_dir=$(dirname $bin_dir)/scripts/util
+shisa_dir=$(dirname $bin_dir)/shisa
+PATH=${bin_dir}:${util_dir}:${shisa_dir}:$PATH
+SELF_TAG="[$(basename $0)]"
+
+# import tools
+source tools
+source docker-helper
+source s-config
+source m-config
+
+MISA="${work_root}/misa_new/"
+MISASP3="${work_root}/misa_new_sp3/"
+test_script_dir="${shisa_src_root}/test_apps/misa_conv_test/scripts"
+
+DEV=0
+refresh_dir "$RESDIR"
+ordinal=1
+for c in ${TEST_CASES}/part_00[1234]*; do
+	for d in fwd bwd wrw; do
+		for t in fp32 fp16 bf16; do
+			p=$(basename $c)
+			# `echo $c | sed -e 's/.*\///'`
+			OUTDIR="$RESDIR/res_${d}_${t}_${p}"
+			LOGP="$RESDIR/log_${d}_${t}_${p}.log"
+			echo "${test_script_dir}/run_misa_cases.pl -v -misa $MISA -o $OUTDIR -lr /SHISA/ref_cache -sr /SHISA/ref_cache -- $c -k1 -t1004 --device $DEV --misasp3 $MISASP3 --dir $d --type $t | tee $LOGP"
+			(( DEV = (DEV + 1) % 8 ))
+
+			OUTDIR="$RESDIR/res_page_${d}_${t}_${p}"
+			LOGP="$RESDIR/log_page_${d}_${t}_${p}.log"	
+			echo "${test_script_dir}/run_misa_cases.pl -v -misa $MISA -o $OUTDIR -lr /SHISA/ref_cache -sr /SHISA/ref_cache -- $c -k1 -t1004 --device $DEV --misasp3 $MISASP3 --dir $d --type $t --dbg_force_alloc_granularity_misa 2097152 --dbg 0 | tee $LOGP"
+			(( DEV = (DEV + 1) % 8 ))
+		done
+	done
+done

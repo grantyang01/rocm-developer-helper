@@ -29,3 +29,13 @@ for target in $build_list; do
     fi
     log "==================== build $target: success ====================="
 done
+
+# build ShaderProcessor-exe
+target=tools/shader_processor
+log "======================== build $target =========================="
+pushd ./tools/shader_processor
+if ! stack install --local-bin-path /SHISA/bin; then
+    die "fail: $target"
+fi
+popd
+log "==================== build $target: success ====================="
