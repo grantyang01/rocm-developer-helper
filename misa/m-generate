@@ -14,7 +14,7 @@ source m-config
 
 function generate_misa_942() {
     local misa_root="$(realpath .)/$misa_branch"
-    local misa_conv_test_root="${shisa_src_root}/test_apps/misa_conv_test"
+    local misa_conv_test_root="${shisa_root}/test_apps/misa_conv_test"
     local work_dir="$(realpath $work_root)"
 
     local sp3_dir="$work_dir/misa_new_sp3"
@@ -60,8 +60,8 @@ function generate_misa_942() {
         local base_path=${sp3_file%.*}
         local base_name=${base_path##*/}
         echo "$curr. $base_name"
-        if ! "${shisa_bin_root}/bin/shader_build" "${base_path}.sp3" -a "$SP3_ASIC" --elf-abi HSA --elf-out ${base_path}.elf  > /dev/null; then
-            die "fail to build: \n ${shisa_bin_root}/bin/shader_build "${base_path}.sp3" -a $SP3_ASIC --elf-abi HSA --elf-out ${base_path}.elf"
+        if ! "${shisa_root}/bin/shader_build" "${base_path}.sp3" -a "$SP3_ASIC" --elf-abi HSA --elf-out ${base_path}.elf  > /dev/null; then
+            die "fail to build: \n ${shisa_root}/bin/shader_build "${base_path}.sp3" -a $SP3_ASIC --elf-abi HSA --elf-out ${base_path}.elf"
         fi
         (( curr = curr + 1))
     done
@@ -69,7 +69,7 @@ function generate_misa_942() {
 
 function generate_misa_950() {
     local misa_root="$(realpath .)/$misa_branch"
-    local misa_conv_test_root="${shisa_src_root}/test_apps/misa_conv_test"
+    local misa_conv_test_root="${shisa_root}/test_apps/misa_conv_test"
     local work_dir="$(realpath $work_root)"
 
     local sp3_dir="$work_dir/misa_new_sp3"
@@ -108,6 +108,7 @@ function generate_misa_950() {
         done
     done
 
+    touch /SHISA/sp3_config.log
     cp ${misa_conv_test_root}/misa_util_sp3/* "$sp3_dir"
     curr=1
     local ssp_file
@@ -115,11 +116,12 @@ function generate_misa_950() {
         local base_path=${ssp_file%.*}
         local base_name=${base_path##*/}
         echo "$curr. $base_name"
-        if ! "${shisa_bin_root}/bin/shader_build" "$ssp_file" -a "$SP3_ASIC" --elf-abi HSA --elf-out ${base_path}.elf  > /dev/null; then
-            die "fail to build: \n ${shisa_bin_root}/bin/shader_build $ssp_file -a $SP3_ASIC --elf-abi HSA --elf-out ${base_path}.elf"
+        if ! "${shisa_root}/bin/shader_build" "$ssp_file" -a "$SP3_ASIC" --elf-abi HSA --elf-out ${base_path}.elf  > /dev/null; then
+            die "fail to build: \n ${shisa_root}/bin/shader_build $ssp_file -a $SP3_ASIC --elf-abi HSA --elf-out ${base_path}.elf"
         fi
         (( curr = curr + 1))
     done
+    mkdir -p /SHISA/ref_cache
 }
 
 # run inside docker instance of $instance_name

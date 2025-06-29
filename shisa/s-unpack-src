@@ -1,0 +1,24 @@
+#!/usr/bin/bash
+# make tools available
+bin_dir=$(realpath $0|xargs dirname)
+util_dir=$(dirname $bin_dir)/scripts/util
+PATH=${bin_dir}:${util_dir}:$PATH
+SELF_TAG="[$(basename $0)]"
+
+# import tools
+source tools
+source docker-helper
+source s-config
+
+# run at host
+if is_inside_docker; then
+    die "fail: cannot run inside docker!"
+fi
+
+# unpack src from windows/p4v
+if ! tar -xvf shisa_src.tar.gz; then
+    die "fail: unpack shisa_src.tar.gz"
+fi
+
+# enable scripts
+enable_scripts .

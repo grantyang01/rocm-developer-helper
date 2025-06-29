@@ -1,0 +1,34 @@
+# !bin/sh
+#!/bin/bash
+# make tools available
+bin_dir=$(realpath $0|xargs dirname)
+util_dir=$(dirname $bin_dir)/scripts/util
+shisa_dir=$(dirname $bin_dir)/shisa
+PATH=${bin_dir}:${util_dir}:${shisa_dir}:$PATH
+SELF_TAG="[$(basename $0)]"
+
+# import tools
+source tools
+source docker-helper
+source s-config
+source m-config
+
+function full_test() {
+    local misa_root="./$misa_branch"
+    if [ ! -d "$misa_root" ]; then
+        die "fail: can't find misa root: ./$misa_branch"
+    fi
+
+    # generate/cache test-list
+    ${bin_dir}/m-list-test > test-list
+    mv test-list "$RESDIR"
+    
+    cat "$RESDIR"/test-list | parallel -j 8
+}
+
+# run inside docker instance of $instance_name
+if ! is_docker_instance $instance_name; then
+    die "fail: please run it at instance: $instance_name"
+fi
+
+full_test

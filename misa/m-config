@@ -4,8 +4,7 @@
 misa_branch=fix_wrw_applicability
 
 # root of shisa source code 
-shisa_src_root=/home/gryang/work/il/SHISA_stg
-shisa_bin_root=/home/gryang/work/il/SHISA_min
+shisa_root=/home/gryang/work/il/SHISA_min
 
 # work directory
 work_root="$(realpath .)/workdir-${misa_branch}"
@@ -14,6 +13,6 @@ work_root="$(realpath .)/workdir-${misa_branch}"
 RESDIR_PARTIAL="${work_root}/results_partial"
 RESDIR="${work_root}/results_base"
 
-TEST_CASES="${shisa_src_root}/testing/misa_test"
+TEST_CASES="${shisa_root}/testing/misa_test"
 #TEST_CASES="$bin_dir/misa_new_cases"
 REF_CACHE="$SHISA/ref_cache"

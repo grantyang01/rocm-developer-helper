@@ -12,9 +12,14 @@ source docker-helper
 source s-config
 source m-config
 
+# run inside docker instance of $instance_name
+if ! is_docker_instance $instance_name; then
+    die "fail: please run it at instance: $instance_name"
+fi
+
 MISA="${work_root}/misa_new/"
 MISASP3="${work_root}/misa_new_sp3/"
-test_script_dir="${shisa_src_root}/test_apps/misa_conv_test/scripts"
+test_script_dir="${shisa_root}/test_apps/misa_conv_test/scripts"
 
 DEV=0
 refresh_dir "$RESDIR"

@@ -1,0 +1,38 @@
+#!/usr/bin/bash
+# make tools available
+bin_dir=$(realpath $0|xargs dirname)
+util_dir=$(dirname $bin_dir)/scripts/util
+shisa_dir=$(dirname $bin_dir)/shisa
+PATH=${bin_dir}:${util_dir}:${shisa_dir}:$PATH
+SELF_TAG="[$(basename $0)]"
+
+# import tools
+source tools
+source docker-helper
+source s-config
+source m-config
+
+function summary() {
+    local misa_root="./$misa_branch"
+    if [ ! -d "$misa_root" ]; then
+        die "fail: can't locate misa root: ./$misa_branch"
+    fi
+
+    local stat_dir=${work_root}/stat
+    local first=1
+    local dir
+    for dir in ${stat_dir}/*/; do
+        local stat="${dir}case_stat.txt"
+        if (( first == 1 )); then
+            first=0
+            printf "test,pass,page fault,fails verification,misa fails,cache err,no output\n"
+        fi
+        printf "%s" $(basename "$dir")
+        for (( i = 6; i <= 11; i++ )); do
+            tail +1 $stat | awk -v ordinal=$i '{sum+=$ordinal}END{printf ",%d", sum }'
+        done
+        printf "\n"
+    done
+}
+
+summary

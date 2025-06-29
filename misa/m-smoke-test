@@ -1,0 +1,41 @@
+#!/bin/bash
+# make tools available
+bin_dir=$(realpath $0|xargs dirname)
+util_dir=$(dirname $bin_dir)/scripts/util
+shisa_dir=$(dirname $bin_dir)/shisa
+PATH=${bin_dir}:${util_dir}:${shisa_dir}:$PATH
+SELF_TAG="[$(basename $0)]"
+
+# import tools
+source tools
+source docker-helper
+source s-config
+source m-config
+
+function smoke_test() {
+    local misa_root="./$misa_branch"
+    if [ ! -d "$misa_root" ]; then
+        die "fail: can't find misa root: ./$misa_branch"
+    fi
+
+    # igemm_codegen.py can only work inside $misa_root
+    pushd "$misa_root"
+    if ! python3 igemm_codegen.py config/igemm_fwd_gtc_${GFX_VERSION}_nhwc_fp16.config; then
+        die "fail: igemm_codegen.py"
+    fi
+
+    # conv_driver.exe can only work inside ./out
+    cd out
+
+    if ! ./conv_driver.exe convfp16 -n 1 -c 1 -H 96 -W 180 -k 32 -y 4 -x 4 -p 0 -q 0 -u 4 -v 4 -l 1 -j 1 -m conv -g 1 -F 1 -t 1 --in_layout NHWC --fil_layout NHWC --out_layout NHWC; then
+        die "fail: conv_driver.exe"
+    fi
+    popd
+}
+
+# run inside docker instance of $instance_name
+if ! is_docker_instance $instance_name; then
+    die "fail: please run it at instance: $instance_name"
+fi
+
+smoke_test

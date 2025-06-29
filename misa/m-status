@@ -1,0 +1,72 @@
+#!/bin/bash
+# make tools available
+bin_dir=$(realpath $0|xargs dirname)
+util_dir=$(dirname $bin_dir)/scripts/util
+shisa_dir=$(dirname $bin_dir)/shisa
+PATH=${bin_dir}:${util_dir}:${shisa_dir}:$PATH
+SELF_TAG="[$(basename $0)]"
+
+# import tools
+source tools
+source docker-helper
+source s-config
+source m-config
+
+function check_test_status() {
+    local misa_root="./$misa_branch"
+    if [ ! -d "$misa_root" ]; then
+        die "fail: can't locate misa root: ./$misa_branch"
+    fi
+
+    all=`ls $RESDIR/*.log | awk -F / '{print $NF}'`
+    completed=`grep "exit code:" $RESDIR/*.log | awk -F '[]:/]' '{print $(NF-3)}'`
+    # printf "%s\n" $completed
+    pending=`printf "%s\n%s\n" "$all" "$completed" | sort | uniq -u`
+
+    if [ ! -z "$pending" ]; then
+        printf "pending tests:\n"
+        printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
+
+        curr=1
+        for log_file in $pending; do
+            printf "%-3d %s\n" $curr "$log_file"
+
+            fname="${RESDIR}/${log_file}"
+            now=$(date +%s)
+            last_modified=$(stat -c %Y $fname)
+            (( file_age = now - last_modified ))
+            printf "\tlast modified: \n\t\t%d seconds ago\n" $file_age
+            tail -15 ${fname} | awk '/case/{printf "\tlast completed test case:\n\t\t%s\n", $2}'
+            (( curr = curr + 1))
+        done
+        printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
+    fi
+
+    cnt_completed="$(wc -w <<<$completed)"
+    printf "total:\t\t%4d\nlaunched:\t%4d\ncompleted:\t%4d\npending:\t%4d\n" `
+            `"$(wc -l <$RESDIR/test-list)" `
+            `"$(wc -w <<<$all)" `
+            `$cnt_completed `
+            `"$(wc -w <<<$pending)"
+
+    succ=`grep "exit code: 0" $RESDIR/*.log | awk -F '[]:/]' '{print $2}'`
+    cnt_succ="$(wc -w <<<$succ)"
+    (( cnt_fail = cnt_completed - cnt_succ ))
+    printf "success:\t%4d\nfailed: \t%4d\n" `
+            `$cnt_succ `
+            `$cnt_fail
+
+    if (( cnt_fail > 0 )); then
+        printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
+        printf "failed tests:\n"
+        failed=`grep "exit code: 1" $RESDIR/*.log | awk -F '[]:/]' '{print $(NF-3)}'`
+        curr=1
+        for failed_file in $failed; do
+            printf "%-3d %s\n" $curr "$RESDIR/$failed_file"
+            (( curr = curr + 1))
+        done
+        printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
+    fi
+}
+
+check_test_status

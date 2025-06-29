@@ -210,3 +210,15 @@ function permute() {
     done
     return 0
 }
+
+function enable_scripts() {
+    local dir=$1
+    if ! check_tool dos2unix dos_2_unix deb; then
+        die "tool not available: dos2unix"
+    fi
+    # to unix
+    find "$dir" -type f \( -name "*.sh" -o -name "*.pl" -o -name "*.py" \) -exec dos2unix {} \;
+    # add exec flag
+    find "$dir" -type f \( -name "*.sh" -o -name "*.pl" -o -name "*.py" \) -exec chmod +rwx {} \;
+    return 0
+}
