@@ -1,0 +1,83 @@
+#!/bin/bash
+# make tools available
+bin_dir=$(realpath $0|xargs dirname)
+util_dir=$(dirname $bin_dir)/scripts/util
+shisa_dir=$(dirname $bin_dir)/shisa
+PATH=${bin_dir}:${util_dir}:${shisa_dir}:$PATH
+SELF_TAG="[$(basename $0)]"
+
+# import tools
+source tools
+source docker-helper
+source s-config
+source m-config
+
+function partial_test() {
+    local test_number=$1
+    local misa_root="./$misa_branch"
+    if [ ! -d "$misa_root" ]; then
+        die "fail: can't find misa root: ./$misa_branch"
+    fi
+
+    local test_count=$(ls workdir-fix_wrw_applicability/results_partial/[0-9][0-9][0-9][0-9] -d |wc -w)
+    local tests
+    local log_single_test
+
+    if (( test_number == -1 )); then
+        tests=$(cat $RESDIR_PARTIAL/test-list)
+    else
+        if (( test_number > test_count)); then
+            die "fail: test_number($test_number) > total test($test_count)"
+        fi
+
+        log_single_test="$RESDIR_PARTIAL/result-$(printf "%04d" $test_number)"
+        refresh_dir "$log_single_test"    
+        local test_id="$(basename $RESDIR_PARTIAL)/$(printf "%04d" $test_number)"
+        tests=$(cat $RESDIR_PARTIAL/test-list | grep "$test_id" | awk -F '>' -v log_dir="$log_single_test" '{
+                    printf "%s > %s/loop%04d\n", $1, log_dir, NR
+                }')
+    fi
+
+    local device
+    for (( device = 0 ; device < 8 ; device++ )); do
+        printf "%s\n" "$tests" | grep -- "--device $device"  | parallel -j 1 &
+    done
+
+    if (( test_number != -1 )); then
+        local total=$(printf "%s\n" "$tests" | wc -l)
+        local start=$(date +%s)
+        local curr
+        while (( total != completed )); do
+            local completed=$(ls $log_single_test/loop* 2>/dev/null| wc -l)
+            curr=$(date +%s)
+            printf "\rTest %04d: completed/total(%d / %d) in %d seconds\033[0K" `
+                    `"$test_number" `
+                    `"$completed" `
+                    `"$total" `
+                    `"$((curr - start))"
+            sleep 1
+        done
+
+        local log_name="$log_single_test/log$(printf "%04d" $test_number)"
+        find "$log_single_test" -name "loop*" | xargs cat > "$log_name"
+        curr=$(date +%s)
+        printf "\rTest %04d: passed/total(%d / %d) in %d seconds\033[0K\n" `
+               `"$test_number" `
+               `"$(grep 'Bit exact' "$log_name" | wc -l)" `
+               `"$total" `
+               `"$((curr - start))"
+    fi
+}
+
+# run inside docker instance of $instance_name
+if ! is_docker_instance $instance_name; then
+    die "fail: please run it at instance: $instance_name"
+fi
+
+# -1 means all partial tests
+test_number=-1
+if (( $# == 1 )); then
+    test_number=$1
+fi
+
+partial_test "$test_number"

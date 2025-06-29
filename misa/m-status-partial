@@ -1,0 +1,51 @@
+#!/bin/bash
+# make tools available
+bin_dir=$(realpath $0|xargs dirname)
+util_dir=$(dirname $bin_dir)/scripts/util
+shisa_dir=$(dirname $bin_dir)/shisa
+PATH=${bin_dir}:${util_dir}:${shisa_dir}:$PATH
+SELF_TAG="[$(basename $0)]"
+
+# import tools
+source tools
+source docker-helper
+source s-config
+source m-config
+
+function partial_status() {
+    local misa_root="./$misa_branch"
+    if [ ! -d "$misa_root" ]; then
+        die "fail: can't find misa root: ./$misa_branch"
+    fi
+
+    task_total=0
+    task_completed=0
+    for test_case in $RESDIR_PARTIAL/[0-9]*/; do
+        (( task_total = task_total + 1 ))
+        completed=0
+        total=0
+        for loop in ${test_case}loop[0-9]*; do
+            (( total = total + 1 ))
+            line_cnt=`wc -l < $loop`
+            if (( line_cnt > 3 )); then
+                (( completed = completed + 1 ))
+            fi
+        done
+
+        printf "%s: " $test_case
+        if (( total == completed )); then
+            (( task_completed = task_completed + 1 ))
+            printf "completed"
+        else 
+            printf "pending"
+        fi
+        printf "(%d / %d)\n"  $completed $total
+    done
+    printf "completed/total: %d / %d\n" $task_completed $task_total
+}
+
+# run inside docker instance of $instance_name
+if ! is_docker_instance $instance_name; then
+    die "fail: please run it at instance: $instance_name"
+fi
+partial_status

@@ -1,0 +1,64 @@
+#!/bin/bash
+# make tools available
+bin_dir=$(realpath $0|xargs dirname)
+util_dir=$(dirname $bin_dir)/scripts/util
+shisa_dir=$(dirname $bin_dir)/shisa
+PATH=${bin_dir}:${util_dir}:${shisa_dir}:$PATH
+SELF_TAG="[$(basename $0)]"
+
+# import tools
+source tools
+source docker-helper
+source s-config
+source m-config
+
+function partial_parse() {
+    local misa_root="./$misa_branch"
+    if [ ! -d "$misa_root" ]; then
+        die "fail: can't find misa root: ./$misa_branch"
+    fi
+
+    stat=${work_root}/stat_partial/
+    refresh_dir "$stat"
+    summary="$stat/$(basename $RESDIR_PARTIAL)_stat.csv"
+    test_name_list=$RESDIR_PARTIAL/test_name_list.csv
+    echo "test,name" > $test_name_list
+
+    echo "test,pass,total" | tee $summary
+    task_total=0
+    task_completed=0
+    for test_case in $RESDIR_PARTIAL/[0-9]*/; do
+        (( task_total = task_total + 1 ))
+        completed=0
+        total=0
+        succ=0
+        log_file="$(dirname $test_case)/log$(basename $test_case)"
+        first=0
+        for loop in ${test_case}loop[0-9]*; do
+            # combine log file
+            if (( first == 0 )); then
+                first=1
+                cat $test_case/header > "$log_file"
+                printf "%s," $(basename $test_case) >> $test_name_list
+                head -1 $test_case/header | awk '{printf "%s\n", $2}' >> $test_name_list
+            fi
+            cat $loop >> "$log_file"
+
+            (( total = total + 1 ))
+            line_cnt=`wc -l < $loop`
+            if (( line_cnt > 3 )); then
+                (( completed = completed + 1 ))
+            fi
+        done
+        pass=`grep 'Bit exact' ${test_case}loop[0-9]* | wc -l`
+
+        printf "%s," $(basename $test_case) | tee -a $summary
+        printf "%d,%d\n"  $pass $completed  | tee -a $summary
+    done
+}
+
+# run inside docker instance of $instance_name
+if ! is_docker_instance $instance_name; then
+    die "fail: please run it at instance: $instance_name"
+fi
+partial_parse

@@ -1,4 +1,3 @@
-# !bin/sh
 #!/bin/bash
 # make tools available
 bin_dir=$(realpath $0|xargs dirname)

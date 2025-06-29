@@ -1,0 +1,135 @@
+# !bin/sh
+#!/bin/bash
+# make tools available
+bin_dir=$(realpath $0|xargs dirname)
+util_dir=$(dirname $bin_dir)/scripts/util
+shisa_dir=$(dirname $bin_dir)/shisa
+PATH=${bin_dir}:${util_dir}:${shisa_dir}:$PATH
+SELF_TAG="[$(basename $0)]"
+
+# import tools
+source tools
+source docker-helper
+source s-config
+source m-config
+
+function create_error_test() {
+    local misa_root="./$misa_branch"
+    if [ ! -d "$misa_root" ]; then
+        die "fail: can't find misa root: $misa_root"
+    fi
+
+    local loops=$1
+    find "$RESDIR" -name error.log -size +0 | xargs cat > "$RESDIR/error_all"
+    refresh_dir "$RESDIR_PARTIAL"
+    cat "$RESDIR/error_all" | awk -v loop_count=$loops -v result_dir="$RESDIR_PARTIAL" \
+    '
+    BEGIN {
+        curr = 1
+        dump_base=result_dir "/dump_dir"
+        print "# !bin/sh"
+    }
+    /^\[.+/{
+        if ( $0 ~ /fwd/ || 
+            $0 ~ /bwd/ || 
+            $0 ~ /wrw/)
+        {
+            start = 1
+            split($0, fields, /[_. ]/)
+            test_case=fields[2]
+            test_id=fields[3]
+            dir=fields[5]
+            dtype=fields[8]
+
+            log_dir=sprintf("%s/%04d/", result_dir, curr)
+            system("mkdir -p " log_dir)
+            log_header=log_dir"header"
+            print $0 > log_header
+            printf "\necho +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
+            print "echo \"" curr ". " $0 "\""
+            printf "echo \"%s %s %s %s\"\n", test_case, test_id, dir, dtype
+        } else {
+            start = 0
+        }
+    }
+    /conv_driver.exe/ {
+        if (start) {
+            print "[origin misa cmd]" >> log_header
+            print $0 >> log_header
+            printf "echo \"cd ./misa_new/" dir "_" dtype "\"\n"
+            dump_dir = sprintf("%s/dump%04d/", dump_base, curr)
+            print "dump_dir=\"" dump_dir "\""
+            print  "mkdir -p $dump_dir"
+            printf "echo \"IGEMM_DUMPDIR_ALL=$dump_dir "
+            for ( i = 2; i <= NF; i++ ) {
+                printf "%s%s", $i, (i == NF ? "\"\n" : OFS)
+            }
+
+            printf "pushd ./misa_new/%s_%s\n", dir, dtype
+            printf "if ! IGEMM_DUMPDIR_ALL=$dump_dir "
+            for ( i = 2; i <= NF; i++ ) {
+                printf "%s%s", $i, (i == NF ? "; then\n" : OFS)
+            }
+            print "    echo " test_case "_" test_id "_" dir "_" dtype ":fail"
+            print "    exit -1"
+            print "fi"
+            print "popd"
+        }
+    }
+    /misa_conv_test/ {
+        if (start) {
+            print "[origin misa_conv cmd]" >> log_header
+            print $0 >> log_header
+            # setup dump file
+            sub(/\/tmp\/DUMP[[:alnum:]_]+\//, dump_dir, $0);
+
+            # patch: --misa_sp3  path
+            sub(/ \/work\//, " /home/gryang/work/", $0);
+
+            # skip --store_ref and --load_ref
+            count = split($0, args)
+            device = 0
+            for ( loop = 1 ; loop <= loop_count ; loop++ ) {
+                misa_cmd = ""
+                for ( i = 1 ; i <= count ; i++ ) {
+                    if ( $i == "--load_ref" || $i == "--store_ref" ) {
+                        i++
+                    }
+                    else if ( $i == "--device" ) {
+                        misa_cmd = sprintf("%s %s %d ", misa_cmd, $i, device)
+                        i++
+                    }
+                    else {
+                        misa_cmd = sprintf("%s%s ", misa_cmd, $i)
+                    }
+                }
+                device = (device + 1) % 8
+                log_file = sprintf("%sloop%04d", log_dir, loop)
+                printf "[loop %04d]\n%s\n", loop, misa_cmd >> log_file
+                printf "%s >> %s\n", misa_cmd, log_file >> result_dir"/test-list"
+                if (loop == 1) {
+                    printf "%s -n %d --ms_limit -1 \n", misa_cmd, loop_count >> result_dir"/partial-cmd-list-single-gpu"
+                }
+            }
+            curr++
+        }
+    }
+    ' > "${work_root}/setup_dump_dir.sh"
+    chmod +x "${work_root}/setup_dump_dir.sh"
+
+    # set up misa dump dir
+    pushd ${work_root}
+    ./setup_dump_dir.sh
+    popd
+}
+
+# run inside docker instance of $instance_name
+if ! is_docker_instance $instance_name; then
+    die "fail: please run it at instance: $instance_name"
+fi
+
+repeat_count=1
+if (( $# == 1 )); then
+    repeat_count=$1
+fi
+create_error_test "$repeat_count"
