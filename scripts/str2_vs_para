@@ -1,0 +1,15 @@
+#!/usr/bin/bash
+# 
+count=1
+printf "\"args\": [\n"
+for token in "$@"; do
+    if [[ $token == -* ]]; then
+        printf "\n    "
+    fi
+    printf "\"%s\"" $token;
+    if (( count != $# )); then
+        printf ","
+    fi
+    ((count++))
+done
+printf "\n],\n"

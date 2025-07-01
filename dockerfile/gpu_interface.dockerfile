@@ -12,7 +12,7 @@ RUN sudo apt-get update && sudo apt-get install -y \
   git-lfs
 
 # Install PAL Python dependencies
-RUN python3 -m pip install jinja2
+RUN python3 -m pip install jinja2 ruamel.yaml
 
 # Use Clang as the C/C++ compiler
 ENV CC=/opt/rocm/llvm/bin/clang CXX=/opt/rocm/llvm/bin/clang++

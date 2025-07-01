@@ -1,0 +1,108 @@
+function hyperlink(){
+    local addr=$1
+    local info=$2
+
+    local ESC_8="\x1b]8;;"
+    local ST="\x07"
+
+    # format: [ESC_8 <addr> ST <info>]+ ESC_8 ST
+    echo -E "${ESC_8}${addr}${ST}${info}${ESC_8}${ST}"
+}
+
+function gl(){
+    git log --oneline $@
+}
+
+function grs(){
+    git remote show origin
+}
+
+function gsd() {
+    git rev-parse --show-toplevel
+}
+
+function gls(){
+    git log --pretty=format:"%h|%an|%ad|%s" --date=short -25 $@ | \
+    git-log-filter.awk -v path="$(git rev-parse --show-toplevel)"
+}
+
+function glsf(){
+    # filter commits added by AMD bot
+    git log --pretty=format:"%h|%an|%ad|%s" --date=short -25 \
+        --grep='^SWDEV-[0-9]+ - Submodule' --grep='^SWDEV-[0-9] ' -E --invert-grep $@ -- . | \
+    git-log-filter.awk -v path="$(git rev-parse --show-toplevel)"
+}
+
+function glsp(){
+    pushd ./icd/imported/pal
+    gls -- .
+    popd
+}
+
+function glss(){
+    pushd ./icd/imported/$1
+    gls -- . 
+    popd
+}
+
+function gd(){
+    if [[ $# -eq 0 ]]; then
+        echo "usage: gd <commit>"
+        exit -1
+    fi
+    git show --quiet $1
+    git difftool -t meld -d $1~1...$1
+}
+
+function list-submodule-branch() {
+    git submodule  foreach --recursive 'git branch'
+
+    
+}
+
+function checkout-submodule-branch {
+
+    # toplevel using default parent branch: amd/stg/xgl
+    pathes=($(git submodule foreach 'git branch' | \
+grep detached -B1  | \
+grep -v detached | \
+grep -v -- ^-- | \
+cut -d " " -f 2 | cut -d "'" -f 2 | \
+awk '{$1=$1;print}'))
+
+    branches=($(git submodule foreach 'git branch' | \
+grep detached -A1 | \
+grep -v detach | \
+grep -v -- ^-- | \
+awk '{$1=$1;print}'))
+
+    echo "pathes: ${#pathes[@]}"
+    echo "branches: ${#branches[@]}"
+    for((i=0;i<${#pathes[@]};i++))
+    do
+        echo "$i: ${pathes[$i]} ${branches[$i]}"
+        pushd "${pathes[$i]}" > /dev/null
+        # git checkout "${branches[$i]}"
+        git checkout "amd/stg/xgl"
+        popd > /dev/null
+    done
+
+    # git submodule foreach 'git checkout amd/stg/xgl'
+}
+
+function gu(){
+    # update amd/stg/xgl
+    git pull
+
+    # toplevel using default parent branch: amd/stg/xgl
+    git submodule foreach 'git checkout amd/stg/xgl'
+
+    # lower level is controlled by .gitmodules
+    # compiler/import/llvm-dialects not working
+    #git submodule foreach 'git submodule update --remote'
+}
+
+function go() {
+    git ls-tree -r --name-only HEAD `
+    `| while read filename; do echo "$(git log -1 --format="%ai" -- "$filename") $filename"; done | sort -r
+}

@@ -1,0 +1,14 @@
+#!/bin/bash
+# usage: source activate
+bin_dir="$(dirname $(realpath "${BASH_SOURCE[0]}"))"
+
+# expose dirs:
+scripts_dir=${bin_dir}/scripts
+util_dir=${bin_dir}/scripts/util
+shisa_dir=${bin_dir}/shisa
+misa_dir=${bin_dir}/misa
+PATH=${scripts_dir}:${util_dir}:${shisa_dir}:${misa_dir}:$PATH
+
+# expose git helper functions
+source tools
+source git-cmd-helper

@@ -51,7 +51,12 @@ function setup_gi() {
     fi
 
     # clone gpu_interface and sub modules(pal_navi, pal_vega)
-    if ! git clone --recurse-submodules https://$gh_user:$pat@github.amd.com/LibAmd/SHISA_gpu_interface $target; then
+    local branch_opt
+    if [[ ! -z "${gi_branch}" ]]; then
+        branch_opt="-b ${gi_branch}"
+    fi
+
+    if ! git clone --recurse-submodules https://$gh_user:$pat@github.amd.com/LibAmd/SHISA_gpu_interface $branch_opt $target; then
         die "fail to clone: https://$gh_user:$pat@github.amd.com/LibAmd/SHISA_gpu_interface"
     fi
 

@@ -15,6 +15,9 @@ if is_inside_docker; then
     die "fail: cannot run inside docker!"
 fi
 
+#        `-e SHISA_HSA_PM4_MODE=1 `
+#        `-e SHISA_HSA_TIMEOUT_SECONDS=1 `
+
 docker run -it --rm `
         `-v ${HOME}/work/il/SHISA_min:/SHISA/. `
         `-v ${HOME}/work:${HOME}/work `
