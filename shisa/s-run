@@ -23,6 +23,7 @@ docker run -it --rm `
         `-v ${HOME}/work:${HOME}/work `
         `-v ${HOME}/work/vscode-server:/root/.vscode-server `
         `-w ${HOME}/work/misa `
+        `-e SHISA_HSA_PM4_MODE=1 `
         `-e LD_LIBRARY_PATH=/SHISA/bin-hip-6.5/:/SHISA/bin:/opt/rocm/lib/llvm/lib `
         `-p 127.0.0.1:9346:9339 `
         `--device=/dev/kfd `

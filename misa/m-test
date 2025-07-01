@@ -22,7 +22,12 @@ function full_test() {
     ${bin_dir}/m-list-test > test-list
     mv test-list "$RESDIR"
     
-    cat "$RESDIR"/test-list | parallel -j 8
+    # cat "$RESDIR"/test-list | parallel -j 8
+    local device
+    for (( device = 0 ; device < 8 ; device++ )); do
+        cat "$RESDIR"/test-list | grep -- "--device $device"  | parallel -j 1 &
+    done
+    return 0
 }
 
 # run inside docker instance of $instance_name

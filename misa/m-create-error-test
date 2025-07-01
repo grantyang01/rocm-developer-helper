@@ -128,7 +128,7 @@ if ! is_docker_instance $instance_name; then
     die "fail: please run it at instance: $instance_name"
 fi
 
-repeat_count=1
+repeat_count=100
 if (( $# == 1 )); then
     repeat_count=$1
 fi

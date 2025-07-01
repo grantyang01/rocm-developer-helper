@@ -107,7 +107,8 @@ function setup_gi() {
     fi
     cp /opt/rocm-$rocm_version/include/amd_comgr/amd_comgr.h ./external/amd_comgr
 
-    # release 
+    mkdir -p /SHISA/bin /SHISA/binDebug
+    # release
     if ! cmake_build . `
                 `Release `
                 `-DGPU_INTERFACE_PAL_SUPPORT=ON `

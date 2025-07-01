@@ -213,7 +213,7 @@ function permute() {
 
 function enable_scripts() {
     local dir=$1
-    if ! check_tool dos2unix dos_2_unix deb; then
+    if ! check_tool dos2unix dos2unix deb; then
         die "tool not available: dos2unix"
     fi
     # to unix

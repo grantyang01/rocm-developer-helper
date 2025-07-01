@@ -53,10 +53,11 @@ function generate_misa_942() {
         done
     done
 
+    touch /SHISA/sp3_config.log
     cp ${misa_conv_test_root}/misa_util_sp3/* "$sp3_dir"
     curr=1
     local sp3_file
-    for sp3_file in $sp3_dir/igemm*.sp3; do
+    for sp3_file in $sp3_dir/igemm*.sp3 $sp3_dir/zero_mem*.sp3 $sp3_dir/tensor_cast*.sp3; do
         local base_path=${sp3_file%.*}
         local base_name=${base_path##*/}
         echo "$curr. $base_name"
@@ -65,6 +66,7 @@ function generate_misa_942() {
         fi
         (( curr = curr + 1))
     done
+    mkdir -p /SHISA/ref_cache
 }
 
 function generate_misa_950() {
