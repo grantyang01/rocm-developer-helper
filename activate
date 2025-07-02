@@ -1,12 +1,12 @@
 #!/bin/bash
 # usage: source activate
-bin_dir="$(dirname $(realpath "${BASH_SOURCE[0]}"))"
+RDH_ROOT="$(dirname $(realpath "${BASH_SOURCE[0]}"))"
 
 # expose dirs:
-scripts_dir=${bin_dir}/scripts
-util_dir=${bin_dir}/scripts/util
-shisa_dir=${bin_dir}/shisa
-misa_dir=${bin_dir}/misa
+scripts_dir=${RDH_ROOT}/scripts
+util_dir=${RDH_ROOT}/scripts/util
+shisa_dir=${RDH_ROOT}/shisa
+misa_dir=${RDH_ROOT}/misa
 PATH=${scripts_dir}:${util_dir}:${shisa_dir}:${misa_dir}:$PATH
 
 # expose git helper functions

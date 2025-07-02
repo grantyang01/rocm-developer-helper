@@ -15,10 +15,16 @@ if is_inside_docker; then
     die "fail: cannot run inside docker!"
 fi
 
-# unpack src from windows/p4v
-if ! tar -xvf shisa_src.tar.gz; then
-    die "fail: unpack shisa_src.tar.gz"
+src_file="./shisa_src.tar.gz"
+if (( $# == 1 )); then
+    src_file=$1
 fi
 
-# enable scripts
-enable_scripts .
+target="./shisa"
+if (( $# == 2 )); then
+    src_file=$1
+fi
+
+if ! extract "$src_file" "$target"; then
+    die "fail: unpack $src_file to $target"
+fi

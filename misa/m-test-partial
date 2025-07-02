@@ -3,7 +3,8 @@
 rdh_root="$(realpath $0|xargs dirname)/.."
 source ${rdh_root}/activate
 
-# self ID
+# expose self
+bin_dir=$(realpath $0|xargs dirname)
 SELF_TAG="[$(basename $0)]"
 
 # import tools

@@ -1,0 +1,48 @@
+#!/bin/bash
+# expose rdh
+rdh_root="$(realpath $0|xargs dirname)/.."
+source ${rdh_root}/activate
+
+# expose self
+bin_dir=$(realpath $0|xargs dirname)
+SELF_TAG="[$(basename $0)]"
+
+# import tools
+source docker-helper
+source s-config
+source m-config
+
+function shisa_deploy_linux() {
+    #1: unpack src
+    log "1. ++++++++++++++++++++ unpack shisa src +++++++++++++++++"
+    local src_file="$1"
+    local target="$(realpath "$src_file" | xargs dirname)"/shisa
+    if ! s-unpack-src "$src_file" "$target"; then
+        die "fail: unpack $src_file to $target"
+    fi
+    log "++++++++++++++++++++ unpack shisa src: succ +++++++++++++++++"
+
+    # step2: build gpu-interface docker
+    log "2. ++++++++++++++++++++ build gpu interface docker +++++++++++++++++"
+    if ! gi-docker-build; then
+        die "fail: build gpu_interface docker"
+    fi
+    log "2. ++++++++++++++++++++ build gpu interface docker: succ +++++++++++++++++"
+
+    # step3: build shisa docker
+    log "3. ++++++++++++++++++++ build gpu interface docker +++++++++++++++++"
+    if ! s-docker-build; then
+        die "fail: build gpu_interface docker"
+    fi
+    log "3. ++++++++++++++++++++ build gpu interface docker: succ +++++++++++++++++"
+
+    return 0
+}
+
+# run at host
+if is_inside_docker; then
+    die "fail: cannot run inside docker!"
+fi
+
+# deploy shisa in ./shisa
+shisa_deploy_linux "./shisa_src.tar.gz"

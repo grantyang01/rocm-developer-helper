@@ -1,13 +1,14 @@
 #!/usr/bin/bash
 # create docker image to for gpu interface build
-# make tools available
+# expose rdh
+rdh_root="$(realpath $0|xargs dirname)/.."
+source ${rdh_root}/activate
+
+# expose self
 bin_dir=$(realpath $0|xargs dirname)
-util_dir=$(dirname $bin_dir)/scripts/util
-PATH=${bin_dir}:${util_dir}:$PATH
 SELF_TAG="[$(basename $0)]"
 
 # import tools
-source tools
 source docker-helper
 source gi-config
 
@@ -17,7 +18,7 @@ if is_inside_docker; then
 fi
 
 # dockerfile
-docker_file="$(dirname $bin_dir)/dockerfile/gpu_interface.dockerfile"
+docker_file="${rdh_root}/dockerfile/gpu_interface.dockerfile"
 
 # docker build
 log "docker build: $image_name"

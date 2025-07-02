@@ -211,6 +211,21 @@ function permute() {
     return 0
 }
 
+function extract() {
+    local src_file=$1
+    local target=$2
+
+    # unpack src from windows/p4v
+    refresh_dir "$target"
+    if ! tar -xzvf "$src_file" -C "$target"; then
+        die "fail: unpack $src_file"
+    fi
+
+    # enable scripts
+    enable_scripts "$target"
+    return 0
+}
+
 function enable_scripts() {
     local dir=$1
     if ! check_tool dos2unix dos2unix deb; then
