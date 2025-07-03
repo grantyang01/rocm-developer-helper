@@ -5,11 +5,9 @@ image_name=shisa-ubuntu-$rocm_os_version-rocm-$rocm_version
 instance_name=shisa
 
 # MI350 
-# : << comment_MI350
 SP3_ASIC=MI350
 TT_OPTS="-a GFX9"
 GFX_VERSION=gfx950
-# comment_MI350
 
 # MI300
 #SP3_ASIC=MI300

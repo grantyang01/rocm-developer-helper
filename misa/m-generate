@@ -81,7 +81,6 @@ function generate_misa_950() {
     local curr=1
     local dir
     local type
-
     for dir in fwd bwd wrw; do
         for type in fp32 fp16 bf16; do
             local conf_dir=$misa_dir/${dir}_${type}
@@ -111,13 +110,15 @@ function generate_misa_950() {
     done
 
     touch /SHISA/sp3_config.log
-
     # cp ${misa_conv_test_root}/misa_util_sp3/* "$sp3_dir"
     # patch for MI350
     local il_sp3=${shisa_root}/shader_dev_IL/include/lib_v_4_IL/IL.sp3
-    cp ${misa_conv_test_root}/misa_util_sp3/* "$il_sp3"
-    chmod +w "$il_sp3/tensor_cast*.sp3"
-    sed -i 's/asic(MI300)/asic(MI350)/' "$il_sp3/tensor_cast*.sp3"
+    chmod +w "$il_sp3"
+    sed -i 's/DEF_SP3_ASIC_MI300/DEF_SP3_ASIC_MI350/' "$il_sp3"
+
+    cp ${misa_conv_test_root}/misa_util_sp3/* "$sp3_dir"
+    chmod +w "$sp3_dir"/tensor_cast*.sp3
+    sed -i 's/asic(MI300)/asic(MI350)/' "$sp3_dir"/tensor_cast*.sp3
     curr=1
     local ssp_file
     for ssp_file in $sp3_dir/igemm*.ssp $sp3_dir/zero_mem*.sp3 $sp3_dir/tensor_cast*.sp3; do
