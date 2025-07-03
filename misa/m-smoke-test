@@ -1,13 +1,13 @@
 #!/bin/bash
-# make tools available
-bin_dir=$(realpath $0|xargs dirname)
-util_dir=$(dirname $bin_dir)/scripts/util
-shisa_dir=$(dirname $bin_dir)/shisa
-PATH=${bin_dir}:${util_dir}:${shisa_dir}:$PATH
+# expose rdh
+rdh_root="$(realpath $0|xargs dirname)/.."
+source ${rdh_root}/activate
+
+# expose self
+bin_dir="$(realpath $0|xargs dirname)"
 SELF_TAG="[$(basename $0)]"
 
 # import tools
-source tools
 source docker-helper
 source s-config
 source m-config

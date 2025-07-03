@@ -1,12 +1,13 @@
 #!/usr/bin/bash
-# make tools available
+# expose rdh
+rdh_root="$(realpath $0|xargs dirname)/.."
+source ${rdh_root}/activate
+
+# expose self
 bin_dir=$(realpath $0|xargs dirname)
-util_dir=$(dirname $bin_dir)/scripts/util
-PATH=${bin_dir}:${util_dir}:$PATH
 SELF_TAG="[$(basename $0)]"
 
 # import tools
-source tools
 source docker-helper
 source gi-config
 
