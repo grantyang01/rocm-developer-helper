@@ -66,7 +66,7 @@ function generate_misa_942() {
         fi
         (( curr = curr + 1))
     done
-    mkdir -p /SHISA/ref_cache
+    mkdir -p $REF_CACHE
 }
 
 function generate_misa_950() {
@@ -111,7 +111,13 @@ function generate_misa_950() {
     done
 
     touch /SHISA/sp3_config.log
-    cp ${misa_conv_test_root}/misa_util_sp3/* "$sp3_dir"
+
+    # cp ${misa_conv_test_root}/misa_util_sp3/* "$sp3_dir"
+    # patch for MI350
+    local il_sp3=${shisa_root}/shader_dev_IL/include/lib_v_4_IL/IL.sp3
+    cp ${misa_conv_test_root}/misa_util_sp3/* "$il_sp3"
+    chmod +w "$il_sp3/tensor_cast*.sp3"
+    sed -i 's/asic(MI300)/asic(MI350)/' "$il_sp3/tensor_cast*.sp3"
     curr=1
     local ssp_file
     for ssp_file in $sp3_dir/igemm*.ssp $sp3_dir/zero_mem*.sp3 $sp3_dir/tensor_cast*.sp3; do
@@ -123,7 +129,7 @@ function generate_misa_950() {
         fi
         (( curr = curr + 1))
     done
-    mkdir -p /SHISA/ref_cache
+    mkdir -p $REF_CACHE
 }
 
 # run inside docker instance of $instance_name

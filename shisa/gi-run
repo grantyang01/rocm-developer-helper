@@ -1,12 +1,12 @@
 #!/usr/bin/bash
-# make tools available
+rdh_root="$(realpath $0|xargs dirname)/.."
+source ${rdh_root}/activate
+
+# expose self
 bin_dir=$(realpath $0|xargs dirname)
-util_dir=$(dirname $bin_dir)/scripts/util
-PATH=${bin_dir}:${util_dir}:$PATH
 SELF_TAG="[$(basename $0)]"
 
 # import tools
-source tools
 source docker-helper
 source gi-config
 
@@ -15,24 +15,50 @@ if is_inside_docker; then
     die "fail: cannot run inside docker!"
 fi
 
-# launch gpu interface
-docker run -it --rm `
-        `-v ${HOME}/work/il/SHISA_min:/SHISA/. `
+# launch gpu-interface in background
+if ! docker run -it `
+        `--detach `
+        `-v ${HOME}/work/shisa:/SHISA/. `
         `-e SHISA=/SHISA `
         `-v ${HOME}/work:${HOME}/work `
         `-v ${HOME}/work/.ssh:/root/.ssh `
-        `-v ${HOME}/work/vscode-server:/root/.vscode-server `
+        `-v ${HOME}/.vscode-server:/root/.vscode-server `
         `--device=/dev/kfd `
         `--device=/dev/dri `
-        `-w ${HOME}/work/il/ `
+        `-w ${HOME}/work `
         `--group-add video `
         `--cap-add=SYS_PTRACE `
         `--security-opt seccomp=unconfined `
         `--name $instance_name `
         `--hostname $instance_name `
         `-e CONTAINER_NAME=$instance_name `
-        `$image_name
-
-if (( $? != 0 )); then
+        `$image_name > /dev/null; then
     die "fail to run: $image_name"
+fi
+
+# activate rdh
+if ! docker exec "$instance_name" `
+            `bash -c "echo 'source ${rdh_root}/activate' >> /root/.bashrc"; then
+    die "fail: rdh activate"
+fi
+
+# enter or run setup
+if (( $# == 0 )); then
+    # default: enter docker
+    if ! docker exec -it "$instance_name" bash; then
+        die "fail: exec $instance_name"
+    fi
+else 
+    # run g-setup
+    if ! docker exec -it "$instance_name" bash -c "${rdh_root}/shisa/gi-setup"; then
+        die "fail: setup gpu-interface"
+    fi
+fi
+
+if ! docker stop "$instance_name"; then
+    die "fail: stop $instance_name"
+fi
+
+if ! docker remove "$instance_name"; then
+    die "fail: remove $instance_name"
 fi

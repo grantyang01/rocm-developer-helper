@@ -4,7 +4,7 @@ rdh_root="$(realpath $0|xargs dirname)/.."
 source ${rdh_root}/activate
 
 # expose self
-bin_dir=$(realpath $0|xargs dirname)
+bin_dir="$(realpath $0|xargs dirname)"
 SELF_TAG="[$(basename $0)]"
 
 # import tools
@@ -12,29 +12,61 @@ source docker-helper
 source s-config
 source m-config
 
-function shisa_deploy_linux() {
-    #1: unpack src
+function deploy_linux() {
+    # step 1: get shisa src
     log "1. ++++++++++++++++++++ unpack shisa src +++++++++++++++++"
     local src_file="$1"
     local target="$(realpath "$src_file" | xargs dirname)"/shisa
+    refresh_dir "$target"
     if ! s-unpack-src "$src_file" "$target"; then
         die "fail: unpack $src_file to $target"
     fi
     log "++++++++++++++++++++ unpack shisa src: succ +++++++++++++++++"
 
-    # step2: build gpu-interface docker
-    log "2. ++++++++++++++++++++ build gpu interface docker +++++++++++++++++"
+    # step 2: get misa source
+    refresh_dir "./misa"
+    log "2. ++++++++++++++++++++ misa setup +++++++++++++++++"
+    pushd "./misa"
+    if ! m-setup;  then
+        die "fail: misa setup"
+    fi
+
+    # apply patch
+    cd "$misa_branch"
+    if ! git apply "$misa_dir/op_sel.patch"; then
+        die "fail: apply misa patch ob_sel.patch"
+    fi
+
+    popd
+    log "2. ++++++++++++++++++++ misa setup: sucess +++++++++++++++++"
+
+    # step 3: build gpu-interface docker
+    log "3. ++++++++++++++++++++ build gpu interface docker +++++++++++++++++"
     if ! gi-docker-build; then
         die "fail: build gpu_interface docker"
     fi
-    log "2. ++++++++++++++++++++ build gpu interface docker: succ +++++++++++++++++"
-
-    # step3: build shisa docker
-    log "3. ++++++++++++++++++++ build gpu interface docker +++++++++++++++++"
-    if ! s-docker-build; then
-        die "fail: build gpu_interface docker"
-    fi
     log "3. ++++++++++++++++++++ build gpu interface docker: succ +++++++++++++++++"
+
+    # step 4: build shisa docker
+    log "4. ++++++++++++++++++++ build shisa docker +++++++++++++++++"
+    if ! s-docker-build; then
+        die "fail: build shisa docker"
+    fi
+    log "4. ++++++++++++++++++++ build shisa docker: succ +++++++++++++++++"
+
+    # step 5: gpu-interface setup
+    log "5. ++++++++++++++++++++ gpu-interface setup +++++++++++++++++"
+    if ! gi-run setup; then
+        die "fail: gi-run gpu-interface"
+    fi
+    log "5. ++++++++++++++++++++ gpu-interface setup: sucess +++++++++++++++++"
+
+    # step 6: shisa setup
+    log "6. ++++++++++++++++++++ shisa setup +++++++++++++++++"
+    if ! s-run setup; then
+        die "fail: s-run setup shisa doker"
+    fi
+    log "6. ++++++++++++++++++++ shisa setup: sucess +++++++++++++++++"
 
     return 0
 }
@@ -45,4 +77,4 @@ if is_inside_docker; then
 fi
 
 # deploy shisa in ./shisa
-shisa_deploy_linux "./shisa_src.tar.gz"
+deploy_linux "./shisa_src.tar.gz"

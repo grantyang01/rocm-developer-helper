@@ -1,12 +1,11 @@
 #!/usr/bin/bash
-# make tools available
+rdh_root="$(realpath $0|xargs dirname)/.."
+source ${rdh_root}/activate
+
+# expose self
 bin_dir=$(realpath $0|xargs dirname)
-util_dir=$(dirname $bin_dir)/scripts/util
-PATH=${bin_dir}:${util_dir}:$PATH
-SELF_TAG="[$(basename $0)]"
 
 # import tools
-source tools
 source docker-helper
 source s-config
 
@@ -18,19 +17,47 @@ fi
 #        `-e SHISA_HSA_PM4_MODE=1 `
 #        `-e SHISA_HSA_TIMEOUT_SECONDS=1 `
 
-docker run -it --rm `
-        `-v ${HOME}/work/il/SHISA_min:/SHISA/. `
+# launch shisa in background
+if ! docker run -it `
+        `--detach `
+        `-v ${HOME}/work/shisa:/SHISA/. `
         `-v ${HOME}/work:${HOME}/work `
         `-v ${HOME}/work/vscode-server:/root/.vscode-server `
         `-w ${HOME}/work/misa `
         `-e LD_LIBRARY_PATH=/SHISA/bin-hip-6.5/:/SHISA/bin:/opt/rocm/lib/llvm/lib `
+        `-e SHISA_HSA_PM4_MODE=1 `
         `-p 127.0.0.1:9346:9339 `
         `--device=/dev/kfd `
         `--device=/dev/dri `
         `--name $instance_name `
         `--hostname $instance_name `
-        `$image_name
-
-if (( $? != 0 )); then
+        `$image_name > /dev/null; then
     die "fail to run: $image_name"
+fi
+
+# activate rdh
+if ! docker exec "$instance_name" `
+            `bash -c "echo 'source ${rdh_root}/activate' >> /root/.bashrc"; then
+    die "fail: rdh activate"
+fi
+
+# enter or run setup
+if (( $# == 0 )); then
+    # default: enter docker
+    if ! docker exec -it "$instance_name" bash; then
+        die "fail: exec $instance_name"
+    fi
+else 
+    # shisa setup
+    if ! docker exec -it "$instance_name" bash -c "cd ../shisa;${rdh_root}/shisa/s-setup"; then
+        die "fail: setup shisa"
+    fi
+fi
+
+if ! docker stop "$instance_name"; then
+    die "fail: stop $instance_name"
+fi
+
+if ! docker remove "$instance_name"; then
+    die "fail: remove $instance_name"
 fi

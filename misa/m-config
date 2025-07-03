@@ -4,7 +4,7 @@
 misa_branch=fix_wrw_applicability
 
 # root of shisa source code 
-shisa_root=/home/gryang/work/il/SHISA_min
+shisa_root=/home/gryang/work/shisa
 
 # work directory
 work_root="$(realpath .)/workdir-${misa_branch}"

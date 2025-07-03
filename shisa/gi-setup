@@ -1,12 +1,12 @@
 #!/usr/bin/bash
-# make tools available
+rdh_root="$(realpath $0|xargs dirname)/.."
+source ${rdh_root}/activate
+
+# expose self
 bin_dir=$(realpath $0|xargs dirname)
-util_dir=$(dirname $bin_dir)/scripts/util
-PATH=${bin_dir}:${util_dir}:$PATH
 SELF_TAG="[$(basename $0)]"
 
 # import tools
-source tools
 source gi-config
 source docker-helper
 source cmake-helper
@@ -71,6 +71,9 @@ function setup_gi() {
 
     # fix syntax errors in pal_navi/shared/devdriver/shared/legacy/inc/util/queue.h
     sed -i 's/\(: Queue(rhs\.\)allocCb\()\)/\1m_allocCb\2/' ./shared/devdriver/shared/legacy/inc/util/queue.h
+
+    # fix syntax error in pal_navi/shared/devdriver/third_party/rapidjson/include/rapidjson/document.h
+    sed -i 's/const SizeType length;/SizeType length;/' ./shared/devdriver/third_party/rapidjson/include/rapidjson/document.h
 
     # apply patch to pal_vega
     cd ../pal_vega
