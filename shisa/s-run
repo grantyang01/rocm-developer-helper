@@ -25,7 +25,6 @@ if ! docker run -it `
         `-v ${HOME}/work/vscode-server:/root/.vscode-server `
         `-w ${HOME}/work/misa `
         `-e LD_LIBRARY_PATH=/SHISA/bin-hip-6.5/:/SHISA/bin:/opt/rocm/lib/llvm/lib `
-        `-e SHISA_HSA_PM4_MODE=1 `
         `-p 127.0.0.1:9346:9339 `
         `--device=/dev/kfd `
         `--device=/dev/dri `
@@ -58,6 +57,6 @@ if ! docker stop "$instance_name"; then
     die "fail: stop $instance_name"
 fi
 
-if ! docker remove "$instance_name"; then
-    die "fail: remove $instance_name"
+if ! docker rm "$instance_name"; then
+    die "fail: rm $instance_name"
 fi

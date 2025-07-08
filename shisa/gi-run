@@ -59,6 +59,6 @@ if ! docker stop "$instance_name"; then
     die "fail: stop $instance_name"
 fi
 
-if ! docker remove "$instance_name"; then
-    die "fail: remove $instance_name"
+if ! docker rm "$instance_name"; then
+    die "fail: rm $instance_name"
 fi
