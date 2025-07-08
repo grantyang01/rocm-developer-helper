@@ -40,6 +40,8 @@ function deploy_linux() {
     popd
     log "2. ++++++++++++++++++++ misa setup: sucess +++++++++++++++++"
 
+    local tmp_dir=$(mktemp -d -p . tmp.XXXXXX)
+    pushd "$tmp_dir"
     # step 3: build gpu-interface docker
     log "3. ++++++++++++++++++++ build gpu interface docker +++++++++++++++++"
     if ! gi-docker-build; then
@@ -53,6 +55,9 @@ function deploy_linux() {
         die "fail: build shisa docker"
     fi
     log "4. ++++++++++++++++++++ build shisa docker: succ +++++++++++++++++"
+
+    popd
+    rmdir -rf "$tmp_dir"
 
     # step 5: gpu-interface setup
     log "5. ++++++++++++++++++++ gpu-interface setup +++++++++++++++++"
