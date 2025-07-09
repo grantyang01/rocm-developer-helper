@@ -1,6 +1,7 @@
 ARG ROCM_VERSION=6.4.1
 ARG ROCM_OS_VERSION=22.04
-FROM rocm/dev-ubuntu-${ROCM_OS_VERSION}:${ROCM_VERSION}
+ARG ROCM_BASE=rocm/dev-ubuntu-${ROCM_OS_VERSION}:${ROCM_VERSION}
+FROM ${ROCM_BASE} AS base
 ARG SP3_ASIC
 ARG TT_OPTS
 RUN test -n "$SP3_ASIC" || (echo "--build-arg SP3_ASIC not set" && false)

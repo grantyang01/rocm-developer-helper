@@ -1,0 +1,46 @@
+#!/bin/bash
+# shisa helper
+function get_gfx_version() {
+    local versions=$(rocminfo | awk '/^[[:space:]]+Name:[[:space:]]+gfx/{print $2}' | sort | uniq)
+    local count=$(wc -w <<< $versions)
+    if (( count == 1 )); then
+        printf "%s\n" "$versions"
+        return 0
+    fi
+    return -1
+}
+
+function get_sp3_asic() {
+    case $1 in
+        gfx950) echo "MI350"
+                return 0;;
+        gfx942) echo "MI300"
+                return 0;;
+        *) return -1;;
+    esac
+}
+
+function get_tt_opts() {
+    case $1 in
+        gfx950|gfx942) echo "-a GFX9"
+                return 0;;
+        *) return -1;;
+    esac
+}
+
+function get_compute_unit() {
+    local compute_unit=$(rocminfo | awk '
+    /^[[:space:]]+Uuid:[[:space:]]+GPU-/{
+        gpu_start=1
+    }
+    /^[[:space:]]+Compute Unit:/{
+        if (gpu_start) print $3
+    }
+    ' | sort | uniq)
+    local count=$(wc -w <<< $compute_unit)
+    if (( count == 1 )); then
+        printf "%s\n" "$compute_unit"
+        return 0
+    fi
+    return -1
+}

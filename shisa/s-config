@@ -1,15 +1,31 @@
 #!/usr/bin/bash
+rdh_root="$(realpath ${BASH_SOURCE[0]}|xargs dirname)/.."
+source ${rdh_root}/activate
+source shisa-helper
+
 rocm_version=6.4.1
 rocm_os_version=22.04
 image_name=shisa-ubuntu-$rocm_os_version-rocm-$rocm_version
 instance_name=shisa
 
-# MI350 
-SP3_ASIC=MI350
-TT_OPTS="-a GFX9"
-GFX_VERSION=gfx950
+# rocm internal images
+rocm_internal_image="compute-artifactory.amd.com:5000/rocm-plus-docker/framework/compute-rocm-dkms-no-npi-hipclang:`
+                    `16148_ubuntu22.04_py3.10_pytorch_release-2.6_ce580d3"
+if [[ ! -z "$rocm_internal_image" ]]; then
+    image_name=shisa-ubuntu-$rocm_os_version-rocm-16148
+fi
 
-# MI300
-#SP3_ASIC=MI300
-#TT_OPTS="-a GFX9"
-#GFX_VERSION=gfx942
+GFX_VERSION=$(get_gfx_version)
+if [[ -z "$GFX_VERSION" ]]; then
+    die "fail: gfx version unknown"
+fi
+
+SP3_ASIC=$(get_sp3_asic $GFX_VERSION)
+if [[ -z "$SP3_ASIC" ]]; then
+    die "fail: SP3_ASIC unknown"
+fi
+
+TT_OPTS="$(get_tt_opts $GFX_VERSION)"
+if [[ -z "$TT_OPTS" ]]; then
+    die "fail: TT_OPTS unknown"
+fi
