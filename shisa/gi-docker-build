@@ -24,8 +24,8 @@ docker_file="${rdh_root}/dockerfile/gpu_interface.dockerfile"
 log "docker build: $image_name_gi"
 if ! docker build -t "$image_name_gi" `
                  `-f $docker_file `
-                 `--build-arg ROCM_VERSION=$rocm_version `
-                 `--build-arg ROCM_OS_VERSION=$rocm_os_version .; then
+                 `--build-arg ROCM_VERSION=$rocm_version_gi `
+                 `--build-arg ROCM_OS_VERSION=$rocm_os_version_gi .; then
     die "fail to build: $image_name_gi"
 fi
 log "docker build success: $image_name_gi"

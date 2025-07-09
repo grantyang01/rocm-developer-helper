@@ -19,7 +19,7 @@ function setup_rocr() {
         die "fail to create: $target"
     fi
 
-    if ! git clone https://github.com/RadeonOpenCompute/ROCR-Runtime -b rocm-$rocm_version $target; then
+    if ! git clone https://github.com/RadeonOpenCompute/ROCR-Runtime -b rocm-$rocm_version_gi $target; then
         die "fail to clone ROCR-Runtime"
     fi
 
@@ -105,10 +105,10 @@ function setup_gi() {
     cd ..
 
     # patch amd_comgr.h
-    if [ ! -f /opt/rocm-$rocm_version/include/amd_comgr/amd_comgr.h ]; then
-        die "file not exist: /opt/rocm-$rocm_version/include/amd_comgr/amd_comgr.h"
+    if [ ! -f /opt/rocm-$rocm_version_gi/include/amd_comgr/amd_comgr.h ]; then
+        die "file not exist: /opt/rocm-$rocm_version_gi/include/amd_comgr/amd_comgr.h"
     fi
-    cp /opt/rocm-$rocm_version/include/amd_comgr/amd_comgr.h ./external/amd_comgr
+    cp /opt/rocm-$rocm_version_gi/include/amd_comgr/amd_comgr.h ./external/amd_comgr
 
     mkdir -p /SHISA/bin /SHISA/binDebug
     # release
