@@ -132,9 +132,9 @@ function setup_gi() {
     popd
 }
 
-# run inside docker instance of $instance_name
-if ! is_docker_instance $instance_name; then
-    die "fail: please run it at instance: $instance_name"
+# run inside docker instance of $instance_name_gi
+if ! is_docker_instance $instance_name_gi; then
+    die "fail: please run it at instance: $instance_name_gi"
 fi
 
 setup_rocr rocr
@@ -146,4 +146,4 @@ find rocr -name "libhsa-runtime64.a" | xargs realpath
 
 # libgpu_interface.11.so
 log "======================results: gpu_interface=================="
-find "$SHISA" -name "libgpu_interface.11.so"
+find "$SHISA" -name "libgpu_interface.*.so"

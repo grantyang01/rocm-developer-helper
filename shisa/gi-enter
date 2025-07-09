@@ -16,7 +16,7 @@ if is_inside_docker; then
     die "fail: cannot run inside docker!"
 fi
 
-docker exec -it $instance_name bash
+docker exec -it $instance_name_gi bash
 if (( $? != 0 )); then
-    die "fail to enter: $image_name - $instance_name"
+    die "fail to enter: $image_name_gi - $instance_name_gi"
 fi

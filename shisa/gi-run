@@ -29,15 +29,14 @@ if ! docker run -it `
         `--group-add video `
         `--cap-add=SYS_PTRACE `
         `--security-opt seccomp=unconfined `
-        `--name $instance_name `
-        `--hostname $instance_name `
-        `-e CONTAINER_NAME=$instance_name `
-        `$image_name > /dev/null; then
-    die "fail to run: $image_name"
+        `--name $instance_name_gi `
+        `--hostname $instance_name_gi `
+        `$image_name_gi > /dev/null; then
+    die "fail to run: $image_name_gi"
 fi
 
 # activate rdh
-if ! docker exec "$instance_name" `
+if ! docker exec "$instance_name_gi" `
             `bash -c "echo 'source ${rdh_root}/activate' >> /root/.bashrc"; then
     die "fail: rdh activate"
 fi
@@ -45,20 +44,20 @@ fi
 # enter or run setup
 if (( $# == 0 )); then
     # default: enter docker
-    if ! docker exec -it "$instance_name" bash; then
-        die "fail: exec $instance_name"
+    if ! docker exec -it "$instance_name_gi" bash; then
+        die "fail: exec $instance_name_gi"
     fi
 else 
     # run g-setup
-    if ! docker exec -it "$instance_name" bash -c "${rdh_root}/shisa/gi-setup"; then
+    if ! docker exec -it "$instance_name_gi" bash -c "${rdh_root}/shisa/gi-setup"; then
         die "fail: setup gpu-interface"
     fi
 fi
 
-if ! docker stop "$instance_name"; then
-    die "fail: stop $instance_name"
+if ! docker stop "$instance_name_gi"; then
+    die "fail: stop $instance_name_gi"
 fi
 
-if ! docker rm "$instance_name"; then
-    die "fail: rm $instance_name"
+if ! docker rm "$instance_name_gi"; then
+    die "fail: rm $instance_name_gi"
 fi
