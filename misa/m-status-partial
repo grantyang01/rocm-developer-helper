@@ -13,6 +13,7 @@ source s-config
 source m-config
 
 function partial_status() {
+    local result_partial="$1"
     local misa_root="./$misa_branch"
     if [ ! -d "$misa_root" ]; then
         die "fail: can't find misa root: ./$misa_branch"
@@ -20,7 +21,7 @@ function partial_status() {
 
     task_total=0
     task_completed=0
-    for test_case in $RESDIR_PARTIAL/[0-9]*/; do
+    for test_case in $result_partial/[0-9]*/; do
         (( task_total = task_total + 1 ))
         completed=0
         total=0
@@ -48,4 +49,10 @@ function partial_status() {
 if ! is_docker_instance $instance_name; then
     die "fail: please run it at instance: $instance_name"
 fi
-partial_status
+
+result_partial="$RESDIR_PARTIAL"
+if (( $# >= 1 )); then
+    result_partial=$(realpath $1)
+fi
+
+partial_status "$result_partial"

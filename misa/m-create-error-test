@@ -19,9 +19,12 @@ function create_error_test() {
     fi
 
     local loops=$1
-    find "$RESDIR" -name error.log -size +0 | xargs cat > "$RESDIR/error_all"
-    refresh_dir "$RESDIR_PARTIAL"
-    cat "$RESDIR/error_all" | awk -v loop_count=$loops -v result_dir="$RESDIR_PARTIAL" \
+    local result_base="$2"
+    local result_partial="$3"
+
+    find "$result_base" -name error.log -size +0 | xargs cat > "$result_base/error_all"
+    refresh_dir "$result_partial"
+    cat "$result_base/error_all" | awk -v loop_count=$loops -v result_dir="$result_partial" \
     '
     BEGIN {
         curr = 1
@@ -128,7 +131,15 @@ if ! is_docker_instance $instance_name; then
 fi
 
 repeat_count=100
-if (( $# == 1 )); then
+if (( $# >= 1 )); then
     repeat_count=$1
 fi
-create_error_test "$repeat_count"
+
+result_base=$RESDIR
+result_partial=$RESDIR_PARTIAL
+if (( $# >= 2 )); then
+    result_base="$(realpath $2)"
+    result_partial="${result_base}_partial"
+fi
+
+create_error_test "$repeat_count" "$result_base" "$result_partial"

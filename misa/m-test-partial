@@ -14,26 +14,27 @@ source m-config
 
 function partial_test() {
     local test_number=$1
+    local result_partial=$2
     local misa_root="./$misa_branch"
     if [ ! -d "$misa_root" ]; then
         die "fail: can't find misa root: ./$misa_branch"
     fi
 
-    local test_count=$(ls workdir-fix_wrw_applicability/results_partial/[0-9][0-9][0-9][0-9] -d |wc -w)
+    local test_count=$(ls $result_partial/[0-9][0-9][0-9][0-9] -d |wc -w)
     local tests
     local log_single_test
 
     if (( test_number == -1 )); then
-        tests=$(cat $RESDIR_PARTIAL/test-list)
+        tests=$(cat $result_partial/test-list)
     else
         if (( test_number > test_count)); then
             die "fail: test_number($test_number) > total test($test_count)"
         fi
 
-        log_single_test="$RESDIR_PARTIAL/result-$(printf "%04d" $test_number)"
+        log_single_test="$result_partial/result-$(printf "%04d" $test_number)"
         refresh_dir "$log_single_test"    
-        local test_id="$(basename $RESDIR_PARTIAL)/$(printf "%04d" $test_number)"
-        tests=$(cat $RESDIR_PARTIAL/test-list | grep "$test_id" | awk -F '>' -v log_dir="$log_single_test" '{
+        local test_id="$(basename $result_partial)/$(printf "%04d" $test_number)"
+        tests=$(cat $result_partial/test-list | grep "$test_id" | awk -F '>' -v log_dir="$log_single_test" '{
                     printf "%s > %s/loop%04d\n", $1, log_dir, NR
                 }')
     fi
@@ -76,8 +77,13 @@ fi
 
 # -1 means all partial tests
 test_number=-1
-if (( $# == 1 )); then
+if (( $# >= 1 )); then
     test_number=$1
 fi
 
-partial_test "$test_number"
+result_partial="$RESDIR_PARTIAL"
+if (( $# >= 2 )); then
+    result_partial=$(realpath $2)
+fi
+
+partial_test "$test_number" "$result_partial"

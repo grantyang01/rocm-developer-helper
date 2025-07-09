@@ -13,6 +13,7 @@ source s-config
 source m-config
 
 function partial_parse() {
+    local result_partial="$1"
     local misa_root="./$misa_branch"
     if [ ! -d "$misa_root" ]; then
         die "fail: can't find misa root: ./$misa_branch"
@@ -20,14 +21,14 @@ function partial_parse() {
 
     stat=${work_root}/stat_partial/
     refresh_dir "$stat"
-    summary="$stat/$(basename $RESDIR_PARTIAL)_stat.csv"
-    test_name_list=$RESDIR_PARTIAL/test_name_list.csv
+    summary="$stat/$(basename $result_partial)_stat.csv"
+    test_name_list=$result_partial/test_name_list.csv
     echo "test,name" > $test_name_list
 
     echo "test,pass,total" | tee $summary
     task_total=0
     task_completed=0
-    for test_case in $RESDIR_PARTIAL/[0-9]*/; do
+    for test_case in $result_partial/[0-9]*/; do
         (( task_total = task_total + 1 ))
         completed=0
         total=0
@@ -61,4 +62,10 @@ function partial_parse() {
 if ! is_docker_instance $instance_name; then
     die "fail: please run it at instance: $instance_name"
 fi
-partial_parse
+
+result_partial="$RESDIR_PARTIAL"
+if (( $# >= 1 )); then
+    result_partial=$(realpath $1)
+fi
+
+partial_parse "$result_partial"

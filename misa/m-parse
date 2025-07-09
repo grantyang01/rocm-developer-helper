@@ -13,6 +13,7 @@ source s-config
 source m-config
 
 function m-parse() {
+    local result_dir=$1
     local misa_root="./$misa_branch"
     if [ ! -d "$misa_root" ]; then
         die "fail: can't locate misa root: ./$misa_branch"
@@ -20,12 +21,17 @@ function m-parse() {
 
     local misa_conv_test_scripts="${shisa_root}/test_apps/misa_conv_test/scripts"
 
-    ${misa_conv_test_scripts}/combine.pl -k ${misa_conv_test_scripts}/kern_list_all.txt -c ${RESDIR}/case_stat.txt $RESDIR > ${RESDIR}/out.txt
+    ${misa_conv_test_scripts}/combine.pl -k ${misa_conv_test_scripts}/kern_list_all.txt -c ${result_dir}/case_stat.txt $result_dir > ${result_dir}/out.txt
 
     # collect
-    local stat=${work_root}/stat/$(basename $RESDIR)
+    local stat=${work_root}/stat/$(basename $result_dir)
     mkdir -p $stat
-    cp ${RESDIR}/out.txt ${RESDIR}/case_stat.txt "$stat"
+    cp ${result_dir}/out.txt ${result_dir}/case_stat.txt "$stat"
 }
 
-m-parse
+result_dir=$RESDIR
+if (( $# == 1 )); then
+    result_dir=$1
+fi
+
+m-parse "$result_dir"
