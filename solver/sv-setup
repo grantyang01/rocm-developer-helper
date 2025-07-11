@@ -16,7 +16,9 @@ if ! is_docker_instance $instance_name_sv; then
     die "fail: please run it at instance: $instance_name_sv"
 fi
 
-# clone rocblas
+# rocblas
+# clone 
+log "build: rocblas"
 blas_src=$(realpath ./rocblas)
 refresh_dir "$blas_src"
 if ! git clone -b "$blas_branch" https://github.com/ROCm/rocBLAS.git "$blas_src"; then
@@ -34,3 +36,26 @@ if ! ./install.sh --debug; then
     die "fail: build release rocblas $blas_branch"
 fi
 popd
+log "build: rocblas success"
+
+# rocsolver
+# clone 
+log "build: rocsolver"
+solve_src=$(realpath ./rocsolver)
+refresh_dir "$solve_src"
+if ! git clone -b "$solve_branch" git@github.com:ROCm/rocSOLVER.git "$solve_src"; then
+    die "fail: clone rocsolver $blas_branch"
+fi
+
+pushd "$solve_src"
+# build dependency and  release 
+if ! ./install.sh -d; then
+    die "fail: build release rocsolver $solve_branch"
+fi
+
+# build debug
+if ! ./install.sh --debug; then
+    die "fail: build release rocsolver $solve_branch"
+fi
+popd
+log "build: rocsolver success"

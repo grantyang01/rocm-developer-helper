@@ -27,6 +27,7 @@ if ! docker run -it `
         `-v ${HOME}/work/shisa:/SHISA/. `
         `-v ${HOME}/work:${HOME}/work `
         `-v ${HOME}/work/vscode-server:/root/.vscode-server `
+        `-v ${HOME}/work/.ssh:/root/.ssh `
         `-w ${HOME}/work `
         `-p 127.0.0.1:9346:9339 `
         `--device=/dev/kfd `
