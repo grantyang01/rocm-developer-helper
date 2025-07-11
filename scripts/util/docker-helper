@@ -114,3 +114,30 @@ function clean() {
     # remove build caches
     docker builder prune -f
 }
+
+function is_container_runing() {
+    local container_name="$1"
+    if [ "$(docker ps --filter "name=^/${container_name}$" --format '{{.Names}}')" == "$container_name" ]; then
+        return 0
+    fi
+}
+
+function is_container_exist() {
+    local container_name="$1"
+    if [ "$(docker ps -a --filter "name=^/${container_name}$" --format '{{.Names}}')" == "$container_name" ]; then
+        return 0
+    fi
+}
+
+function close_container() {
+    local container_name="$1"
+
+    if is_container_runing "$container_name"; then
+        docker stop $container_name &>/dev/null
+    fi
+
+    if is_container_exist "$container_name"; then
+        docker rm $container_name &>/dev/null
+    fi
+    return 0
+}

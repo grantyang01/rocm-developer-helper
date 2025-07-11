@@ -1,0 +1,23 @@
+#!/usr/bin/bash
+# make tools available
+# expose rdh
+rdh_root="$(realpath $0|xargs dirname)/.."
+source ${rdh_root}/activate
+
+# expose self
+bin_dir=$(realpath $0|xargs dirname)
+SELF_TAG="[$(basename $0)]"
+
+# import tools
+source docker-helper
+source sv-config
+
+# run at host
+if is_inside_docker; then
+    die "fail: cannot run inside docker!"
+fi
+
+docker exec -it $instance_name_sv bash
+if (( $? != 0 )); then
+    die "fail to enter: $image_name_sv - $instance_name_sv"
+fi

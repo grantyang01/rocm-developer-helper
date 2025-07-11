@@ -15,6 +15,9 @@ if is_inside_docker; then
     die "fail: cannot run inside docker!"
 fi
 
+# close old instance
+close_container "$instance_name_gi"
+
 # launch gpu-interface in background
 if ! docker run -it `
         `--detach `
@@ -54,10 +57,4 @@ else
     fi
 fi
 
-if ! docker stop "$instance_name_gi"; then
-    die "fail: stop $instance_name_gi"
-fi
-
-if ! docker rm "$instance_name_gi"; then
-    die "fail: rm $instance_name_gi"
-fi
+close_container "$instance_name_gi"

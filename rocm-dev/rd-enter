@@ -1,0 +1,23 @@
+#!/usr/bin/bash
+# make tools available
+# expose rdh
+rdh_root="$(realpath $0|xargs dirname)/.."
+source ${rdh_root}/activate
+
+# expose self
+bin_dir=$(realpath $0|xargs dirname)
+SELF_TAG="[$(basename $0)]"
+
+# import tools
+source docker-helper
+source rd-config
+
+# run at host
+if is_inside_docker; then
+    die "fail: cannot run inside docker!"
+fi
+
+docker exec -it $instance_name_rd bash
+if (( $? != 0 )); then
+    die "fail to enter: $image_name_rd - $instance_name_rd"
+fi

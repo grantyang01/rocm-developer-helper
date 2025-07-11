@@ -1,0 +1,11 @@
+#!/usr/bin/bash
+rdh_root="$(realpath ${BASH_SOURCE[0]}|xargs dirname)/.."
+source ${rdh_root}/activate
+source rd-config
+
+image_name_sv=${image_name_rd}
+instance_name_sv=solver
+
+# code branch
+blas_branch=release/rocm-rel-7.0
+solve_branch=release/rocm-rel-7.0

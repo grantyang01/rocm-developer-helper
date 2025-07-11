@@ -18,7 +18,7 @@ if is_inside_docker; then
 fi
 
 # build from rocm internal image?
-rocm_base="rocm/dev-ubuntu-${ROCM_OS_VERSION}:${ROCM_VERSION}"
+rocm_base="rocm/dev-ubuntu-${rocm_os_version}:${rocm_version}"
 if [[ ! -z "$rocm_internal_image" ]]; then
     # pull if not in local 
     if ! docker image inspect "${rocm_internal_image}" &>/dev/null; then
@@ -36,7 +36,8 @@ fi
 # dockerfile
 docker_file="${rdh_root}/dockerfile/shisa.dockerfile"
 
-#                  `--build-arg ROCM_BASE="$rocm_base" `
+# close old instance
+close_container "$instance_name"
 
 # docker build
 log "docker build: $image_name"

@@ -1,0 +1,59 @@
+#!/usr/bin/bash
+rdh_root="$(realpath $0|xargs dirname)/.."
+source ${rdh_root}/activate
+
+# expose self
+bin_dir=$(realpath $0|xargs dirname)
+
+# import tools
+source docker-helper
+source s-config
+
+# run at host
+if is_inside_docker; then
+    die "fail: cannot run inside docker!"
+fi
+
+# close old instance
+close_container "$instance_name"
+
+#        `-e SHISA_HSA_PM4_MODE=1 `
+#        `-e SHISA_HSA_TIMEOUT_SECONDS=1 `
+#        `-e LD_LIBRARY_PATH=/SHISA/bin-hip-6.5/:/SHISA/bin:/opt/rocm/lib/llvm/lib `
+
+# launch shisa in background
+if ! docker run -it `
+        `--detach `
+        `-v ${HOME}/work/shisa:/SHISA/. `
+        `-v ${HOME}/work:${HOME}/work `
+        `-v ${HOME}/work/vscode-server:/root/.vscode-server `
+        `-w ${HOME}/work/misa `
+        `-p 127.0.0.1:9346:9339 `
+        `--device=/dev/kfd `
+        `--device=/dev/dri `
+        `--name $instance_name `
+        `--hostname $instance_name `
+        `$image_name > /dev/null; then
+    die "fail to run: $image_name"
+fi
+
+# activate rdh
+if ! docker exec "$instance_name" `
+            `bash -c "echo 'source ${rdh_root}/activate' >> /root/.bashrc"; then
+    die "fail: rdh activate"
+fi
+
+# enter or run setup
+if (( $# == 0 )); then
+    # default: enter docker
+    if ! docker exec -it "$instance_name" bash; then
+        die "fail: exec $instance_name"
+    fi
+else 
+    # shisa setup
+    if ! docker exec -it "$instance_name" bash -c "cd ../shisa;${rdh_root}/shisa/s-setup"; then
+        die "fail: setup shisa"
+    fi
+fi
+
+close_container "$instance_name"

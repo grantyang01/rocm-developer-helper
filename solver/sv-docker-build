@@ -1,0 +1,54 @@
+#!/usr/bin/bash
+# create docker image: shisa-docker-<rocm version>
+# expose rdh
+rdh_root="$(realpath $0|xargs dirname)/.."
+source ${rdh_root}/activate
+
+# expose self
+bin_dir=$(realpath $0|xargs dirname)
+SELF_TAG="[$(basename $0)]"
+
+# import tools
+source docker-helper
+source sv-config
+
+# todo
+exit -1
+
+# run at host
+if is_inside_docker; then
+    die "fail: cannot run inside docker!"
+fi
+
+# build from rocm internal image?
+rocm_base="rocm/dev-ubuntu-${rocm_os_version}:${rocm_version}"
+if [[ ! -z "$rocm_internal_image_sv" ]]; then
+    # pull if not in local 
+    if ! docker image inspect "${rocm_internal_image_sv}" &>/dev/null; then
+        if docker pull "${rocm_internal_image_sv}"; then
+            log "succ: ${rocm_internal_image_sv} pulled to local"
+        else
+            die "fail: pull ${rocm_internal_image_sv}"
+        fi
+    else
+        log "${rocm_internal_image_sv} is already in local"
+    fi
+    rocm_base="${rocm_internal_image_sv}"
+fi
+
+# dockerfile
+docker_file="${rdh_root}/dockerfile/solver.dockerfile"
+
+# close old instance
+close_container "$instance_name_sv"
+
+# docker build
+log "docker build: $image_name_sv"
+if ! docker build -t "$image_name_sv" `
+                 `-f $docker_file `
+                 `--build-arg ROCM_BASE="$rocm_base" `
+                 `--build-arg ROCM_VERSION=$rocm_version `
+                 `--build-arg ROCM_OS_VERSION=$rocm_os_version .; then
+    die "fail to build: $image_name_sv"
+fi
+log "docker build success: $image_name_sv"

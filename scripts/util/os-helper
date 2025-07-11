@@ -96,7 +96,6 @@ function get_os_minor_version() {
     esac
 }
 
-
 function get_code_id() {
     local code=$1
     case $code in
@@ -249,4 +248,15 @@ function get_cert_cmd() {
     if [[ $os_id == "rhel" ]]; then
         get_cert_cmd_rhel "$@"
     fi
+}
+
+function get_ubuntu_code_name() {
+    local ubuntu_version=$1
+    case $ubuntu_version in
+        24.04) echo "noble";;
+        22.04) echo "jammy";;
+        20.04) echo "focal";;
+        18.04) echo "bionic";;
+    esac
+    return 0
 }

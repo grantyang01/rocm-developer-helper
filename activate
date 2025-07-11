@@ -5,9 +5,11 @@ RDH_ROOT="$(dirname $(realpath "${BASH_SOURCE[0]}"))"
 # expose dirs:
 scripts_dir=${RDH_ROOT}/scripts
 util_dir=${RDH_ROOT}/scripts/util
+rocm_dev=${RDH_ROOT}/rocm-dev
 shisa_dir=${RDH_ROOT}/shisa
 misa_dir=${RDH_ROOT}/misa
-PATH=${scripts_dir}:${util_dir}:${shisa_dir}:${misa_dir}:$PATH
+solver_dir=${RDH_ROOT}/solver
+PATH=${scripts_dir}:${util_dir}:${rocm_dev}:${shisa_dir}:${misa_dir}:${solver_dir}:$PATH
 
 # expose git helper functions
 source tools

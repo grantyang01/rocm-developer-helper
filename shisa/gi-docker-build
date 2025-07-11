@@ -20,6 +20,9 @@ fi
 # dockerfile
 docker_file="${rdh_root}/dockerfile/gpu_interface.dockerfile"
 
+# close old instance
+close_container "$instance_name_gi"
+
 # docker build
 log "docker build: $image_name_gi"
 if ! docker build -t "$image_name_gi" `
