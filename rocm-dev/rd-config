@@ -1,14 +1,28 @@
 #!/usr/bin/bash
 rdh_root="$(realpath ${BASH_SOURCE[0]}|xargs dirname)/.."
 source ${rdh_root}/activate
+source repo-helper
 
 # base os version
 ubuntu_version=22.04
 
 # unified build dash-board: http://mkdcvlnxapp01.amd.com/dashboard/
-gfx_build_number=2187240
-rocm_branch=compute-rocm-dkms-no-npi-hipclang
-rocm_build=16381
+unified_build_id=25175
+# below could be manually set if unified_build_id isn't set 
+# gfx_build=2187240
+# rocm_branch=compute-rocm-dkms-no-npi-hipclang
+# rocm_build=16381
 
-image_name_rd=rocm-${rocm_build}-ubuntu-${ubuntu_version}
+# search gfx_build gfx_build rocm_build from unified_build_id
+if [[ ! -z "$unified_build_id" ]]; then
+    if ! verify_amd_unified_build_id "$unified_build_id"; then
+        die "fail: unknow unified_build_id $unified_build_id"
+    fi
+fi
+
+if [[ -z "$gfx_build" || -z "$rocm_branch" || -z "$rocm_build" ]]; then
+    die "fail: unknown gfx_build/rocm_branch/rocm_build"
+fi
+
+image_name_rd=rocm-${rocm_branch}-${rocm_build}-ubuntu-${ubuntu_version}
 instance_name_rd=rocm-dev-${ubuntu_version}

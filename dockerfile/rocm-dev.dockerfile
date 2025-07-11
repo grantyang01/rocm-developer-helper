@@ -1,17 +1,17 @@
 ARG UBUNTU_VERSION=24.04
 ARG UBUNTU_CODENAME=noble
-ARG GFX_BUILD_NUMBER
+ARG GFX_BUILD
 ARG ROCM_BRANCH
 ARG ROCM_BUILD
 
 FROM ubuntu:${UBUNTU_VERSION} AS installer
 ARG UBUNTU_VERSION
 ARG UBUNTU_CODENAME
-ARG GFX_BUILD_NUMBER
+ARG GFX_BUILD
 ARG ROCM_BRANCH
 ARG ROCM_BUILD
 
-RUN test -n "${GFX_BUILD_NUMBER}" || (echo "Error: GFX_BUILD_NUMBER is not set" >&2 && exit 1) && \
+RUN test -n "${GFX_BUILD}" || (echo "Error: GFX_BUILD is not set" >&2 && exit 1) && \
     test -n "${ROCM_BRANCH}" || (echo "Error: ROCM_BRANCH is not set" >&2 && exit 1) && \
     test -n "${ROCM_BUILD}" || (echo "Error: ROCM_BUILD is not set" >&2 && exit 1)
 
@@ -22,8 +22,8 @@ RUN apt-get update -y && \
 
 # generate amdgpu-build.list, sample:
 # deb [trusted=yes] https://mkmartifactory.amd.com/artifactory/list/amdgpu-deb-remote 2187240 noble
-RUN echo "Adding amdgpu-build.list: ${GFX_BUILD_NUMBER} ${UBUNTU_CODENAME}" && \
-    echo "deb [trusted=yes] https://mkmartifactory.amd.com/artifactory/list/amdgpu-deb-remote ${GFX_BUILD_NUMBER} ${UBUNTU_CODENAME}" \
+RUN echo "Adding amdgpu-build.list: ${GFX_BUILD} ${UBUNTU_CODENAME}" && \
+    echo "deb [trusted=yes] https://mkmartifactory.amd.com/artifactory/list/amdgpu-deb-remote ${GFX_BUILD} ${UBUNTU_CODENAME}" \
     > /etc/apt/sources.list.d/amdgpu-build.list
 
 # generate rocm-build.list, sample:

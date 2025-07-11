@@ -1,0 +1,25 @@
+#!/bin/bash
+
+function verify_amd_unified_build_id() {
+    local unified_build=$1
+
+    local api_url="http://mkdcvlnxapp01.amd.com/api/get/build_ids.php?repo&unified_id="
+    local response=$(curl -s -w ",%{http_code}" ${api_url}${unified_build}) || ret_code=$?
+    if (( ret_code != 0 )); then
+        return -1
+    fi
+
+    local http_content=$(cut -d ',' -f1 <<< $response)
+    local http_ret=$(cut -d ',' -f2 <<< $response)
+    if (( http_ret == 204 )); then
+        return -1
+    elif (( http_ret != 200 )); then
+        return -1
+    fi
+
+    # export to global variables:
+    gfx_build=$(awk -F '[ =]' '{print $2}' <<< ${http_content})
+    rocm_branch=$(awk -F '[ =/]' '{print $4}' <<< ${http_content})
+    rocm_build=$(awk -F '[ =/]' '{print $5}' <<< ${http_content})
+    return 0
+}

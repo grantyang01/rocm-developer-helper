@@ -33,4 +33,4 @@ function parse_url() {
     popd
 }
 
-parse_url "$1"
+# parse_url "$1"

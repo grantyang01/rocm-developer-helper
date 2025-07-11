@@ -51,7 +51,7 @@ if ! docker build -t "$image_name_rd" `
                  `-f $docker_file `
                  `--build-arg UBUNTU_VERSION=${ubuntu_version} `
                  `--build-arg UBUNTU_CODENAME=$(get_ubuntu_code_name ${ubuntu_version}) `
-                 `--build-arg GFX_BUILD_NUMBER=${gfx_build_number} `
+                 `--build-arg GFX_BUILD=${gfx_build} `
                  `--build-arg ROCM_BRANCH=${rocm_branch} `
                  `--build-arg ROCM_BUILD=${rocm_build} .; then
     die "fail to build: $image_name_rd"
