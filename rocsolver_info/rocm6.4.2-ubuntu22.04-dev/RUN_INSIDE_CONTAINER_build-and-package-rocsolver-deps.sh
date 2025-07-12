@@ -53,7 +53,6 @@ if [[ -d build/release ]]; then
   && true
 fi
 cd ${SCRIPTS_DIR} \
-  && elevate_if_not_root rm -rf ${ROCPRIM_DIR} \
   && true
 elevate_if_not_root apt --fix-broken install -y
 
@@ -68,7 +67,6 @@ git clone ${HIPBLASCOMMON_REPO} \
   && elevate_if_not_root make package install \
   && cp *.deb ${ARTIFACTS_DIR} \
   && cd ${SCRIPTS_DIR} \
-  && elevate_if_not_root rm -rf ${HIPBLASCOMMON_DIR} \
   && true
 elevate_if_not_root apt --fix-broken install -y
 
@@ -85,7 +83,6 @@ if [[ -d build/release ]]; then
   && true
 fi
 cd ${SCRIPTS_DIR} \
-  && rm -rf ${HIPBLASLT_DIR} \
   && true
 elevate_if_not_root apt --fix-broken install -y
 
@@ -101,7 +98,6 @@ if [[ -d build/release ]]; then
   && true
 fi
 cd ${SCRIPTS_DIR} \
-  && rm -rf ${ROCBLAS_DIR} \
   && true
 elevate_if_not_root apt --fix-broken install -y
 
@@ -117,7 +113,6 @@ if [[ -d build/release ]]; then
   && true
 fi
 cd ${SCRIPTS_DIR} \
-  && rm -rf ${ROCSOLVER_DIR} \
   && true
 elevate_if_not_root apt --fix-broken install -y
 

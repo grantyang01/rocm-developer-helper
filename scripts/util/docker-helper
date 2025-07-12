@@ -9,8 +9,7 @@ function is_inside_docker() {
 
 function is_docker_instance() {
     local instance_name=$1
-
-    if is_inside_docker && [ "$(hostname)" = "$instance_name" ]; then
+    if is_inside_docker && [[ "$(hostname)" == *"$instance_name" ]]; then
         return 0
     fi
     return -1

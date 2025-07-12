@@ -21,21 +21,16 @@ close_container "$instance_name_rd"
 if ! docker run -it `
         `--detach `
         `-v ${HOME}/work/shisa:/SHISA/. `
-        `-v ${HOME}/work:${HOME}/work `
-        `-v ${HOME}/work/vscode-server:/root/.vscode-server `
+        `-v ${HOME}:${HOME} `
         `-w ${HOME}/work `
         `--device=/dev/kfd `
         `--device=/dev/dri `
+        `--cap-add=SYS_PTRACE `
+        `--security-opt seccomp=unconfined `
         `--name $instance_name_rd `
-        `--hostname $instance_name_rd `
+        `--hostname $(hostname -s)/$instance_name_rd `
         `$image_name_rd > /dev/null; then
     die "fail to run: $image_name_rd"
-fi
-
-# activate rdh
-if ! docker exec "$instance_name_rd" `
-            `bash -c "echo 'source ${rdh_root}/activate' >> /root/.bashrc"; then
-    die "fail: rdh activate"
 fi
 
 # default: enter docker

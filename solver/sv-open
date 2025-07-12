@@ -17,31 +17,21 @@ fi
 # close old instance
 close_container "$instance_name_sv"
 
-#        `-e SHISA_HSA_PM4_MODE=1 `
-#        `-e SHISA_HSA_TIMEOUT_SECONDS=1 `
-#        `-e LD_LIBRARY_PATH=/SHISA/bin-hip-6.5/:/SHISA/bin:/opt/rocm/lib/llvm/lib `
-
-# launch shisa in background
+# launch docker in background
 if ! docker run -it `
         `--detach `
         `-v ${HOME}/work/shisa:/SHISA/. `
-        `-v ${HOME}/work:${HOME}/work `
-        `-v ${HOME}/work/vscode-server:/root/.vscode-server `
-        `-v ${HOME}/work/.ssh:/root/.ssh `
+        `-v ${HOME}:${HOME} `
         `-w ${HOME}/work `
-        `-p 127.0.0.1:9346:9339 `
         `--device=/dev/kfd `
         `--device=/dev/dri `
+        `--cap-add=SYS_PTRACE `
+        `--security-opt seccomp=unconfined `
+        `-p 127.0.0.1:9346:9339 `
         `--name $instance_name_sv `
-        `--hostname $instance_name_sv `
-        `$image_name_sv > /dev/null; then
+        `--hostname $(hostname -s)/$instance_name_sv `
+        `$image_name_rd > /dev/null; then
     die "fail to run: $image_name_sv"
-fi
-
-# activate rdh
-if ! docker exec "$instance_name_sv" `
-            `bash -c "echo 'source ${rdh_root}/activate' >> /root/.bashrc"; then
-    die "fail: rdh activate"
 fi
 
 # enter or run setup
@@ -51,9 +41,9 @@ if (( $# == 0 )); then
         die "fail: exec $instance_name_sv"
     fi
 else 
-    # shisa setup
+    # solver setup
     if ! docker exec -it "$instance_name_sv" bash -c "cd ../shisa;${rdh_root}/shisa/s-setup"; then
-        die "fail: setup shisa"
+        die "fail: setup solver"
     fi
 fi
 
