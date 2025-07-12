@@ -9,7 +9,8 @@ rocm_dev=${RDH_ROOT}/rocm-dev
 shisa_dir=${RDH_ROOT}/shisa
 misa_dir=${RDH_ROOT}/misa
 solver_dir=${RDH_ROOT}/solver
-PATH=${scripts_dir}:${util_dir}:${rocm_dev}:${shisa_dir}:${misa_dir}:${solver_dir}:$PATH
+solver_info_dir=${RDH_ROOT}/rocsolver_info/rocm6.4.2-ubuntu22.04-dev
+PATH=${scripts_dir}:${util_dir}:${rocm_dev}:${shisa_dir}:${misa_dir}:${solver_dir}:${solver_info_dir}:$PATH
 
 # expose git helper functions
 source tools
