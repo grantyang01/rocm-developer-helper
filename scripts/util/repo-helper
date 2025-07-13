@@ -2,24 +2,59 @@
 
 function verify_amd_unified_build_id() {
     local unified_build=$1
-
-    local api_url="http://mkdcvlnxapp01.amd.com/api/get/build_ids.php?repo&unified_id="
-    local response=$(curl -s -w ",%{http_code}" ${api_url}${unified_build}) || ret_code=$?
-    if (( ret_code != 0 )); then
-        return -1
+    local api_url
+    local is_api_v2=0
+    if (( unified_build >= 100000 )); then
+        # new server: api v2, sample:
+        # http://bas.amd.com/api/v2/get/build_ids?ubid=100677
+        api_url="http://bas.amd.com/api/v2/get/build_ids?ubid="
+        is_api_v2=1
+    else
+        # old server: api v1, sample:
+        # http://mkdcvlnxapp01.amd.com/api/get/build_ids.php?repo&unified_id=25175
+        api_url="http://mkdcvlnxapp01.amd.com/api/get/build_ids.php?repo&unified_id="
     fi
 
-    local http_content=$(cut -d ',' -f1 <<< $response)
-    local http_ret=$(cut -d ',' -f2 <<< $response)
+    local response=$(curl -s -w ",%{http_code}" ${api_url}${unified_build}) || ret_code=$?
+    if (( ret_code != 0 )); then
+        echo "failed to parser build ${unified_build} with code $ret_code"
+        exit 1
+    fi
+
+    local http_content
+    local http_ret
+    if (( is_api_v2 == 0 )); then
+        http_content=$(cut -d ',' -f1 <<< $response)
+        http_ret=$(cut -d ',' -f2 <<< $response)
+    else
+        http_content=${response%,*}
+        http_ret=${response##*,}
+    fi
+
     if (( http_ret == 204 )); then
-        return -1
+        echo "Unified Build does not exist"
+        exit 1
     elif (( http_ret != 200 )); then
-        return -1
+        echo "Issue getting unified build data ($http_content)"
+        exit 1
     fi
 
     # export to global variables:
-    gfx_build=$(awk -F '[ =]' '{print $2}' <<< ${http_content})
-    rocm_branch=$(awk -F '[ =/]' '{print $4}' <<< ${http_content})
-    rocm_build=$(awk -F '[ =/]' '{print $5}' <<< ${http_content})
+    if (( is_api_v2 == 0 )); then
+        # api v1, output format:
+        # --amdgpu-build=2187596 --rocm-build=compute-rocm-rel-6.4/120
+        grfx_build=$(awk -F '[ =]' '{print $2}' <<< ${http_content})
+        rocm_branch=$(awk -F '[ =/]' '{print $4}' <<< ${http_content})
+        rocm_ver=$(awk -F '[ =/]' '{print $5}' <<< ${http_content})
+    else
+        # api v2, output format:
+        # {"kmd":"2186846","mesa_umd":"2187240","rocm":"compute-rocm-dkms-no-npi-hipclang\/16381"}
+        kmd_build=$(jq -r '.kmd' <<< ${http_content})
+        grfx_build=$(jq -r '.mesa_umd' <<< ${http_content})
+        local rocm=$(jq -r '.rocm' <<< ${http_content})
+        rocm_branch=$(cut -d '/' -f1 <<< $rocm)
+        rocm_ver=$(cut -d '/' -f2 <<< $rocm)
+    fi
     return 0
 }
+

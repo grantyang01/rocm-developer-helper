@@ -1,0 +1,152 @@
+#!/bin/bash
+rdh_root="$(realpath $0|xargs dirname)/.."
+source ${rdh_root}/activate
+
+# expose self
+bin_dir=$(realpath $0|xargs dirname)
+SELF_TAG="[$(basename $0)]"
+
+# import tools
+source docker-helper
+source cmake-helper
+source rd-config
+source sv-config
+
+# run inside docker instance of $instance_name_rd
+if ! is_docker_instance $instance_name_rd; then
+    die "fail: please run it at instance: $instance_name_rd"
+fi
+
+function clone_component() {
+    local comp=${1%/*}
+    local branch=${1#*/}
+
+    log "clone: $comp"
+    local src_dir=$(realpath ${solver_src_root})/${comp}    
+    refresh_dir "${src_dir}"
+    local rocm_url="https://github.com/ROCm/${comp}"
+    if ! git clone "${rocm_url}" -b ${branch} ${src_dir}; then
+        die "fail: clone $comp"
+    fi
+}
+
+function build_component() {
+    local comp=${1%/*}
+    local branch=${1#*/}
+    local src_dir=$(realpath ${solver_src_root})/${comp}
+
+    pushd "$src_dir"
+    if [[ "$comp" == "rocPRIM" ]]; then
+        # rocPrim constains include files only
+        # build and install
+        if ! elevate_if_not_root ./install -i; then
+            die "fail: build and install $comp"
+        fi
+
+        # create deb pkg
+        pushd "./build/release"
+        if ! elevate_if_not_root cpack; then
+            die "fail: $comp cpack"
+        fi
+        cp *.deb "$pkg_dir/rel" 
+        cp *.deb "$pkg_dir/dbg"
+        popd
+    elif [[ "$comp" == "hipBLAS-common" ]]; then
+        # hipBLAS-common constains include files only
+        refresh_dir ./build 
+        pushd ./build
+        if ! cmake ..; then
+            die "fail: build $comp"
+        fi
+
+        # build and create deb pkg
+        if ! elevate_if_not_root make package install; then
+            die "fail: build pkg and install $comp"
+        fi
+        cp *.deb "$pkg_dir/rel" 
+        cp *.deb "$pkg_dir/dbg"
+        popd
+    elif [[ "$comp" == "hipBLASLt" || "$comp" == "rocBLAS" ]]; then
+        # release build and install
+        if ! ./install.sh -di; then
+            die "fail: build and install $comp"
+        fi
+        cp ./build/release/*.deb "$pkg_dir/rel" 
+
+        # debug build
+        if ! ./install.sh -g; then
+            die "fail: build and install $comp"
+        fi
+        pushd "./build/debug"
+        cpack
+        cp ./build/release/*.deb "$pkg_dir/dbg" 
+        popd
+
+        # patch: pkg conflictions while installing *.deb
+        # todo: align the pkg version with current os to avoid the confliction ?
+        elevate_if_not_root apt --fix-broken install -y
+    fi
+
+
+    popd
+}
+
+pkg_dir="$(realpath ${solver_src_root})/pkg"
+refresh_dir "$pkg_dir/rel"
+refresh_dir "$pkg_dir/dbg"
+
+# rocPRIM/develop `
+# `hipBLAS-common/develop `
+# `hipBLASLt/develop `
+
+for curr in rocBLAS/develop `
+            `rocSOLVER/develop; do
+    # clone_component "$curr"
+    build_component "$curr"
+
+done
+
+exit 0
+# rocblas
+# clone 
+log "build: rocblas"
+blas_src=$(realpath ./rocblas)
+refresh_dir "$blas_src"
+if ! git clone -b "$blas_branch" https://github.com/ROCm/rocBLAS.git "$blas_src"; then
+    die "fail: clone rocblas $blas_branch"
+fi
+
+pushd "$blas_src"
+# build dependency and  release 
+if ! ./install.sh -d; then
+    die "fail: build release rocblas $blas_branch"
+fi
+
+# build debug
+if ! ./install.sh --debug; then
+    die "fail: build release rocblas $blas_branch"
+fi
+popd
+log "build: rocblas success"
+
+# rocsolver
+# clone 
+log "build: rocsolver"
+solve_src=$(realpath ./rocsolver)
+refresh_dir "$solve_src"
+if ! git clone -b "$solve_branch" git@github.com:ROCm/rocSOLVER.git "$solve_src"; then
+    die "fail: clone rocsolver $blas_branch"
+fi
+
+pushd "$solve_src"
+# build dependency and  release 
+if ! ./install.sh -d; then
+    die "fail: build release rocsolver $solve_branch"
+fi
+
+# build debug
+if ! ./install.sh --debug; then
+    die "fail: build release rocsolver $solve_branch"
+fi
+popd
+log "build: rocsolver success"

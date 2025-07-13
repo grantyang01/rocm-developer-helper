@@ -18,7 +18,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # rocm dev required packages
 RUN apt-get update -y && \
     apt-get upgrade -y && \
-    apt-get install -y ca-certificates cmake git git-lfs doxygen wget libssl-dev zlib1g-dev libfmt-dev && \
+    apt-get install -y ca-certificates cmake git git-lfs doxygen wget libssl-dev zlib1g-dev libfmt-dev python3-venv && \
     apt-get clean
 
 # rocBLAS rocSolver required packages
@@ -31,7 +31,7 @@ RUN apt-get update -y && \
 # Useful packages
 RUN apt-get update -y && \
     apt-get upgrade -y && \
-    apt-get install -y vim zsh zsh-doc curl tmux git less man man-db mlocate && \
+    apt-get install -y vim zsh zsh-doc curl tmux git less man man-db mlocate jq && \
     apt-get install -y keychain hwloc htop ccache bash-completion graphviz && \
     apt-get install -y libgtest-dev libfmt-dev liblapack-dev libtmglib-dev libopenblas-serial-dev && \
     apt-get clean
@@ -55,9 +55,14 @@ RUN mkdir -p /etc/apt/preferences.d && \
 # copy /etc/apt/trusted.gpg.d/rocm-internal.gpg
 COPY rocm-internal.gpg /etc/apt/trusted.gpg.d/
 
-# install rocm
+# install rocm and rocm-dev
 RUN apt-get update -y && \
     apt-get install rocm rocm-dev -y && \
+    apt-get clean
+
+# custom step: pkgs for benchmark and test of rocsolver
+RUN apt-get update -y && \
+    apt-get install -y rocsolver-benchmarks rocsolver-clients rocsolver-tests && \
     apt-get clean
 
 # update cmake to 3.25.2 for ubuntu 22.04(default 3.22, which will fail rocBLAS build)

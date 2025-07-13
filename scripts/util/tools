@@ -237,3 +237,12 @@ function enable_scripts() {
     find "$dir" -type f \( -name "*.sh" -o -name "*.pl" -o -name "*.py" \) -exec chmod +rwx {} \;
     return 0
 }
+
+function elevate_if_not_root() {
+    if (( $EUID )); then
+        sudo "$@"
+    else
+        "$@"
+    fi
+    return $?
+}

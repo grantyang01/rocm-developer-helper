@@ -7,5 +7,4 @@ image_name_sv=${image_name_rd}
 instance_name_sv=solver
 
 # code branch
-blas_branch=release/rocm-rel-7.0
-solve_branch=release/rocm-rel-7.0
+solver_src_root=./solver

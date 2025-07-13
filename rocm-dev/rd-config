@@ -6,23 +6,32 @@ source repo-helper
 # base os version
 ubuntu_version=22.04
 
-# unified build dash-board: http://mkdcvlnxapp01.amd.com/dashboard/
-unified_build_id=25175
-# below could be manually set if unified_build_id isn't set 
-# gfx_build=2187240
-# rocm_branch=compute-rocm-dkms-no-npi-hipclang
-# rocm_build=16381
+# unified build dash-board:
+#    1. http://bas.amd.com/dashboard   -- new server, with uid >= 100000
+#    2. http://mkdcvlnxapp01.amd.com/dashboard/  --old server, uid < 100000
+# 25.20 Beta14
+# unified_build_id=100677
+# latest
+unified_build_id=100730
 
-# search gfx_build gfx_build rocm_build from unified_build_id
+# ROCm 6.4.2 RC4
+# unified_build_id=25175
+
+# below could be manually set if unified_build_id isn't set 
+# grfx_build=2187240
+# rocm_branch=compute-rocm-dkms-no-npi-hipclang
+# rocm_ver=16381
+
+# search grfx_build grfx_build rocm_ver from unified_build_id
 if [[ ! -z "$unified_build_id" ]]; then
     if ! verify_amd_unified_build_id "$unified_build_id"; then
         die "fail: unknow unified_build_id $unified_build_id"
     fi
 fi
 
-if [[ -z "$gfx_build" || -z "$rocm_branch" || -z "$rocm_build" ]]; then
-    die "fail: unknown gfx_build/rocm_branch/rocm_build"
+if [[ -z "$grfx_build" || -z "$rocm_branch" || -z "$rocm_ver" ]]; then
+    die "fail: unknown grfx_build/rocm_branch/rocm_ver"
 fi
 
-image_name_rd=rocm-${rocm_branch}-${rocm_build}-ubuntu-${ubuntu_version}
+image_name_rd=rocm-${rocm_branch}-${rocm_ver}-ubuntu-${ubuntu_version}
 instance_name_rd=rocm-dev-${ubuntu_version}
