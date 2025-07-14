@@ -34,17 +34,8 @@ if ! docker run -it `
     die "fail to run: $image_name_sv"
 fi
 
-# enter or run setup
-if (( $# == 0 )); then
-    # default: enter docker
-    if ! docker exec -it "$instance_name_sv" bash; then
-        die "fail: exec $instance_name_sv"
-    fi
-else 
-    # solver setup
-    if ! docker exec -it "$instance_name_sv" bash -c "cd ../shisa;${rdh_root}/shisa/s-setup"; then
-        die "fail: setup solver"
-    fi
+# default: enter docker
+if ! docker exec -it "$instance_name_sv" bash; then
+    die "fail: exec $instance_name_sv"
 fi
-
 close_container "$instance_name_sv"

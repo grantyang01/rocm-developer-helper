@@ -69,3 +69,32 @@ function ls_uid() {
     printf "rocm_branch:\t%s\n" "$rocm_branch"
     printf "rocm_build:\t%s\n"  "$rocm_build"
 }    
+
+function get_rocm_ver() {
+    local unified_build=$1
+    local api_url
+    if (( unified_build >= 100000 )); then
+        # new server: api v2
+        api_url="http://bas.amd.com/api/v2/get/builds?ubid="
+    else
+        # old server: api v1
+        api_url="http://mkdcvlnxapp01.amd.com/api/get/builds.php?unified_id="
+    fi
+
+    local response=$(curl -s -w ",%{http_code}" ${api_url}${unified_build}) || ret_code=$?
+    if (( ret_code != 0 )); then
+        echo "failed to parser build ${unified_build} with code $ret_code"
+        exit 1
+    fi
+
+    http_content=${response%,*}
+    http_ret=${response##*,}
+
+    if (( http_ret != 200 )); then
+        echo "fail to get $unified_build ($http_content)"
+        exit 1
+    fi
+
+    jq -r '.builds[] | select(.build_type == "ROCm") | .build_version' <<< ${http_content}
+    return 0
+}

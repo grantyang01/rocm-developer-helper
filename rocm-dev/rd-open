@@ -33,9 +33,10 @@ if ! docker run -it `
     die "fail to run: $image_name_rd"
 fi
 
-# default: enter docker
-if ! docker exec -it "$instance_name_rd" bash; then
-    die "fail: exec $instance_name_rd"
+if (( $# == 0 )); then
+    # default: enter docker
+    if ! docker exec -it "$instance_name_rd" bash; then
+        die "fail: exec $instance_name_rd"
+    fi
+    close_container "$instance_name_rd"
 fi
-
-close_container "$instance_name_rd"

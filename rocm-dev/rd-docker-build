@@ -49,6 +49,12 @@ pushd "${rdh_root}/dockerfile"
 # prepare rocm-internal.gpg file
 get_rocm_gpg_file
 
+# get rocm_version
+rocm_ver=$(get_rocm_ver $unified_build_id)
+if [[ -z "$rocm_ver" ]]; then
+    die "fail: rocm_ver not available for $$unified_build_id"
+fi
+
 create_user_options="--build-arg DUID=$(id -u) `
                     `--build-arg DGID=$(id -g) `
                     `--build-arg DUSERNAME=$(whoami | sed -e 's/-//g') `
@@ -57,8 +63,6 @@ create_user_options="--build-arg DUID=$(id -u) `
                     `--build-arg DRGID=$(getent group | grep -Po 'render:\w:\K\d+') `
                     `--build-arg DSHELL=${SHELL}"
 
-# todo: extract rocm_ver from unified build id
-rocm_ver=7.1.0
 if ! docker build -t "$image_name_rd" `
                  `-f $docker_file `
                  `${create_user_options} `
