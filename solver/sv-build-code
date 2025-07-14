@@ -12,10 +12,22 @@ source rd-config
 source sv-config
 
 # run inside docker instance of $instance_name_rd
-if ! is_docker_instance $instance_name_rd && \ 
-   ! is_docker_instance $instance_name_sv ; then
-    die "fail: please run it at instance: $instance_name_rd"
+if ! is_docker_instance "$instance_name_rd" && \
+   ! is_docker_instance "$instance_name_sv" ; then
+    die "fail: please run it at instance: $instance_name_rd or $instance_name_sv"
 fi
+
+function collect_msg() {
+    local type=$1
+    local log=$2
+    local msg="${@:3}"
+
+    if (( type != 0 )); then
+        echo "${log}    $(format_error $msg)\n"
+    else
+        echo "${log}    $(format_msg $msg)\n"
+    fi
+}
 
 function clone_component() {
     local comp=${1%/*}
@@ -26,7 +38,10 @@ function clone_component() {
     refresh_dir "${src_dir}"
     local rocm_url="https://github.com/ROCm/${comp}"
     if ! git clone "${rocm_url}" -b ${branch} ${src_dir}; then
-        die "fail: clone $comp"
+        clone_status=-1
+        clone_log=$(collect_msg 1 "$clone_log" "$comp: fail")
+    else
+        clone_log=$(collect_msg 0 "$clone_log" "$comp: succ")
     fi
 }
 
@@ -36,53 +51,93 @@ function build_component() {
     local src_dir=$(realpath ${solver_src_root})/${comp,,}
 
     pushd "$src_dir"
+    local comp_build_status=0
     if [[ "$comp" == "rocPRIM" ]]; then
         # build and install
         if ! elevate_if_not_root ./install -ri; then
-            die "fail: build and install $comp"
+            comp_build_status=-1
+            build_log=$(collect_msg 1 "$build_log" "$comp fail: ./install -ri")
         fi
+        if (( comp_build_status == 0 )); then
+            build_log=$(collect_msg 0 "$build_log" "$comp build: succ")
+        else
+            build_log=$(collect_msg 1 "$build_log" "$comp build: fail")
+        fi
+
     elif [[ "$comp" == "hipBLAS-common" ]]; then
         if ! cmake -S . -B ./build; then
-            die "fail: cmake $comp"
+            comp_build_status=-1
+            build_log=$(collect_msg 1 "$build_log" "$comp fail: cmake -S . -B ./build")
         fi
 
         # build and install
         pushd ./build
         if ! elevate_if_not_root make install; then
-            die "fail: build pkg and install $comp"
+            comp_build_status=-1
+            build_log=$(collect_msg 1 "$build_log" "$comp fail: make install")
         fi
         popd
+
+        if (( comp_build_status == 0 )); then
+            build_log=$(collect_msg 0 "$build_log" "$comp build: succ")
+        else
+            build_log=$(collect_msg 1 "$build_log" "$comp build: fail")
+        fi
     elif [[ "$comp" == "hipBLASLt" || "$comp" == "rocBLAS" ]]; then
         # release and depencies
         if ! ./install.sh -rd; then
-            die "fail: build and install $comp"
+            comp_build_status=-1
+            build_log=$(collect_msg 1 "$build_log" "$comp fail: ./install.sh -rd")
         fi
 
         # install release
         pushd ./build/release
-        elevate_if_not_root make install
+        if ! elevate_if_not_root make install; then
+            comp_build_status=-1
+            build_log=$(collect_msg 1 "$build_log" "$comp fail: make install")
+        fi
         popd
 
         # debug
         if ! ./install.sh -rg; then
-            die "fail: build and install $comp"
+            comp_build_status=-1
+            build_log=$(collect_msg 1 "$build_log" "$comp fail: ./install.sh -rg")
+        fi
+
+        if (( comp_build_status == 0 )); then
+            build_log=$(collect_msg 0 "$build_log" "$comp build: succ")
+        else
+            build_log=$(collect_msg 1 "$build_log" "$comp build: fail")
         fi
     elif [[ "$comp" == "rocSOLVER" ]]; then
         # release build depencies, no optimization
         if ! ./install.sh -rcnd; then
-            die "fail: build and install $comp"
+            comp_build_status=-1
+            build_log=$(collect_msg 1 "$build_log" "$comp fail: ./install.sh -rcnd")
         fi
         # install release
         pushd ./build/release
-        elevate_if_not_root make install
+        if ! elevate_if_not_root make install; then
+            comp_build_status=-1
+            build_log=$(collect_msg 1 "$build_log" "$comp fail: make install")
+        fi
         popd
 
         # debug
         if ! ./install.sh -rgn; then
-            die "fail: build and install $comp"
+
+            comp_build_status=-1
+            build_log=$(collect_msg 1 "$build_log" "$comp fail: ./install.sh -rgn")
+        fi
+        if (( comp_build_status == 0 )); then
+            build_log=$(collect_msg 0 "$build_log" "$comp build: succ")
+        else
+            build_log=$(collect_msg 1 "$build_log" "$comp build: fail")
         fi
     fi
     popd
+
+    (( build_status += comp_build_status ))
 }
 
 components="rocPRIM/develop `
@@ -90,12 +145,23 @@ components="rocPRIM/develop `
            `hipBLASLt/develop `
            `rocBLAS/develop `
            `rocSOLVER/develop"
+: << con
+components="rocPRIM/develop `
+           `hipBLAS-common/develop"
+con
 
+clone_status=0
+clone_log=""
+build_status=0
+build_log=""
 for curr in  $components; do
-    clone_component "$curr"
+     # clone_component "$curr"
+     build_component "$curr"
 done
 
-for curr in  $components; do
-    build_component "$curr"
-done
-return 0
+log "clone status: $clone_status"
+print_log "$clone_log"
+
+log "build status: $build_status"
+print_log "$build_log"
+

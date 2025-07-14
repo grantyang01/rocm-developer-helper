@@ -8,6 +8,18 @@ function popd() {
     command popd "$@" &> /dev/null
 }
 
+function format_msg() {
+    echo "\e[32m$*\e[0m"
+}
+
+function format_error() {
+    echo "\e[31m$*\e[0m"
+}
+
+function print_log() {
+    echo -e "$*" 1>&2
+}
+
 function log() {
     echo -e "\e[32m${SELF_TAG:-[unknown]} $*\e[0m" 1>&2 ; 
 }
