@@ -35,4 +35,4 @@ if ! docker commit "$instance_name_rd" "$image_name_sv"; then
     die "fail: create $image_name_sv"
 fi
 
-close_container "$instance_name_sv"
+close_container "$instance_name_rd"
