@@ -59,7 +59,7 @@ function build_component() {
 
         # install release
         pushd ./build/release
-        sudo make install
+        elevate_if_not_root make install
         popd
 
         # debug
@@ -73,7 +73,7 @@ function build_component() {
         fi
         # install release
         pushd ./build/release
-        sudo make install
+        elevate_if_not_root make install
         popd
 
         # debug
