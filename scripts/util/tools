@@ -246,3 +246,20 @@ function elevate_if_not_root() {
     fi
     return $?
 }
+
+function get_host_alias() {
+    local alias=$(awk -v host_name="$(hostname)" '
+        tolower($1) == "host" { 
+            host = $2 
+        }
+        tolower($1) == "hostname" && index(tolower($2), tolower(host_name)) > 0 {
+            print host 
+        }
+        ' ~/.ssh/config)
+    if [[ ! -z "$alias" ]]; then
+        echo "$alias"
+    else
+        # fallback to hostname
+        hostname -s
+    fi
+}

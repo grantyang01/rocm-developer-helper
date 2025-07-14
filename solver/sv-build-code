@@ -12,7 +12,8 @@ source rd-config
 source sv-config
 
 # run inside docker instance of $instance_name_rd
-if ! is_docker_instance $instance_name_rd; then
+if ! is_docker_instance $instance_name_rd && \ 
+   ! is_docker_instance $instance_name_sv ; then
     die "fail: please run it at instance: $instance_name_rd"
 fi
 

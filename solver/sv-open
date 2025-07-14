@@ -29,13 +29,15 @@ if ! docker run -it `
         `--security-opt seccomp=unconfined `
         `-p 127.0.0.1:9346:9339 `
         `--name $instance_name_sv `
-        `--hostname $(hostname -s)/$instance_name_sv `
+        `--hostname $(get_host_alias)/$instance_name_sv `
         `$image_name_rd > /dev/null; then
     die "fail to run: $image_name_sv"
 fi
 
 # default: enter docker
-if ! docker exec -it "$instance_name_sv" bash; then
-    die "fail: exec $instance_name_sv"
+docker exec -it "$instance_name_sv" bash
+ret_code=$?
+if (( ret_code != 0 )); then
+    log "docker exec $instance_name_sv return fail code ($ret_code)"
 fi
 close_container "$instance_name_sv"
