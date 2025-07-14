@@ -154,8 +154,12 @@ clone_status=0
 clone_log=""
 build_status=0
 build_log=""
+
 for curr in  $components; do
-     # clone_component "$curr"
+     clone_component "$curr"
+done
+
+for curr in  $components; do
      build_component "$curr"
 done
 
