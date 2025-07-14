@@ -72,7 +72,7 @@ function build_component() {
 
         # build and install
         pushd ./build
-        if ! elevate_if_not_root cmake --install . --prefix /opt/rocm-7.1.0; then
+        if ! elevate_if_not_root cmake --install . --prefix "$ROCM_PATH"; then
             comp_build_status=-1
             build_log=$(collect_msg 1 "$build_log" "$comp fail: make install")
         fi
@@ -92,7 +92,7 @@ function build_component() {
 
         # install release
         pushd ./build/release
-        if ! elevate_if_not_root cmake --install . --prefix /opt/rocm-7.1.0; then
+        if ! elevate_if_not_root cmake --install . --prefix "$ROCM_PATH"; then
             comp_build_status=-1
             build_log=$(collect_msg 1 "$build_log" "$comp fail: make install")
         fi
@@ -117,7 +117,7 @@ function build_component() {
         fi
         # install release
         pushd ./build/release
-        if ! elevate_if_not_root cmake --install . --prefix /opt/rocm-7.1.0; then
+        if ! elevate_if_not_root cmake --install . --prefix "$ROCM_PATH"; then
             comp_build_status=-1
             build_log=$(collect_msg 1 "$build_log" "$comp fail: make install")
         fi
@@ -151,11 +151,11 @@ clone_log=""
 build_status=0
 build_log=""
 
-for curr in  $components; do
+for curr in $components; do
     clone_component "$curr"
 done
-components="rocSOLVER/develop"
 
+# components="rocSOLVER/develop"
 for curr in  $components; do
      build_component "$curr"
 done
