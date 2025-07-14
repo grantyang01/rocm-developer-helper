@@ -25,9 +25,9 @@ if ! rd-open setup; then
 fi
 
 # run 
-if ! docker exec -it "$instance_name_rd" bash -c "${rdh_root}/solver/sv-build-solver"; then
-    # die "fail: setup gpu-interface"
-    log "fail: setup gpu-interface"
+if ! docker exec -it "$instance_name_rd" bash -c "${rdh_root}/solver/sv-build-code"; then
+    # die "fail: build solver code"
+    log "fail: build solver code"
 fi
 
 # store "$instance_name_rd" to 
