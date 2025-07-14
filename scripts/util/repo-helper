@@ -45,7 +45,7 @@ function verify_amd_unified_build_id() {
         # --amdgpu-build=2187596 --rocm-build=compute-rocm-rel-6.4/120
         grfx_build=$(awk -F '[ =]' '{print $2}' <<< ${http_content})
         rocm_branch=$(awk -F '[ =/]' '{print $4}' <<< ${http_content})
-        rocm_ver=$(awk -F '[ =/]' '{print $5}' <<< ${http_content})
+        rocm_build=$(awk -F '[ =/]' '{print $5}' <<< ${http_content})
     else
         # api v2, output format:
         # {"kmd":"2186846","mesa_umd":"2187240","rocm":"compute-rocm-dkms-no-npi-hipclang\/16381"}
@@ -53,8 +53,19 @@ function verify_amd_unified_build_id() {
         grfx_build=$(jq -r '.mesa_umd' <<< ${http_content})
         local rocm=$(jq -r '.rocm' <<< ${http_content})
         rocm_branch=$(cut -d '/' -f1 <<< $rocm)
-        rocm_ver=$(cut -d '/' -f2 <<< $rocm)
+        rocm_build=$(cut -d '/' -f2 <<< $rocm)
     fi
     return 0
 }
 
+function ls_uid() {
+    if (( $# != 1 )); then
+        echo "Usage:"
+        echo "    ls_uid <uid>"
+        return -1
+    fi
+    verify_amd_unified_build_id "$1"
+    printf "grfx_build:\t%s\n" "$grfx_build"
+    printf "rocm_branch:\t%s\n" "$rocm_branch"
+    printf "rocm_build:\t%s\n"  "$rocm_build"
+}    

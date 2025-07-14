@@ -7,12 +7,20 @@ ARG UBUNTU_CODENAME
 ARG GFX_BUILD
 ARG ROCM_BRANCH
 ARG ROCM_BUILD
+ARG ROCM_VER
 
 RUN test -n "${GFX_BUILD}" || (echo "Error: GFX_BUILD is not set" >&2 && exit 1) && \
     test -n "${ROCM_BRANCH}" || (echo "Error: ROCM_BRANCH is not set" >&2 && exit 1) && \
-    test -n "${ROCM_BUILD}" || (echo "Error: ROCM_BUILD is not set" >&2 && exit 1)
+    test -n "${ROCM_BUILD}" || (echo "Error: ROCM_BUILD is not set" >&2 && exit 1) && \
+    test -n "${ROCM_VER}" || (echo "Error: ROCM_VER is not set" >&2 && exit 1)
 
 ENV DEBIAN_FRONTEND=noninteractive
+
+# well-known env variables for ROCM
+ENV ROCM_VERSION=${ROCM_VER}
+ENV ROCM_PATH=/opt/rocm-${ROCM_VER}
+ENV ROCM_ROOT=/opt/rocm-${ROCM_VER}
+ENV PATH=/opt/rocm-${ROCM_VER}/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
 
 # step1: install os packages
 # rocm dev required packages
@@ -66,7 +74,9 @@ RUN apt-get update -y && \
     apt-get clean
 
 # update cmake to 3.25.2 for ubuntu 22.04(default 3.22, which will fail rocBLAS build)
-ARG CMAKE_VER=3.25.2
+# ARG CMAKE_VER=3.25.2
+# 3.28.3: ubuntu 24.04
+ARG CMAKE_VER=3.28.3
 
 RUN if [ "${UBUNTU_VERSION}" = "22.04" ]; then \
         wget https://github.com/Kitware/CMake/releases/download/v${CMAKE_VER}/cmake-${CMAKE_VER}.tar.gz && \

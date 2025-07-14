@@ -20,18 +20,18 @@ unified_build_id=100730
 # below could be manually set if unified_build_id isn't set 
 # grfx_build=2187240
 # rocm_branch=compute-rocm-dkms-no-npi-hipclang
-# rocm_ver=16381
+# rocm_build=16381
 
-# search grfx_build grfx_build rocm_ver from unified_build_id
+# search grfx_build grfx_build rocm_build from unified_build_id
 if [[ ! -z "$unified_build_id" ]]; then
     if ! verify_amd_unified_build_id "$unified_build_id"; then
         die "fail: unknow unified_build_id $unified_build_id"
     fi
 fi
 
-if [[ -z "$grfx_build" || -z "$rocm_branch" || -z "$rocm_ver" ]]; then
-    die "fail: unknown grfx_build/rocm_branch/rocm_ver"
+if [[ -z "$grfx_build" || -z "$rocm_branch" || -z "$rocm_build" ]]; then
+    die "fail: unknown grfx_build/rocm_branch/rocm_build"
 fi
 
-image_name_rd=rocm-${rocm_branch}-${rocm_ver}-ubuntu-${ubuntu_version}
+image_name_rd=rocm-${rocm_branch}-${rocm_build}-ubuntu-${ubuntu_version}
 instance_name_rd=rocm-dev-${ubuntu_version}
