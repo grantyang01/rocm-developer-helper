@@ -170,3 +170,7 @@ function close_container() {
     fi
     return 0
 }
+
+function remove_dangling() {
+    docker rmi $(docker images -f "dangling=true" -q)
+}

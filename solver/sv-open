@@ -30,7 +30,7 @@ if ! docker run -it `
         `-p 127.0.0.1:9346:9339 `
         `--name $instance_name_sv `
         `--hostname $(get_host_alias)/$instance_name_sv `
-        `$image_name_rd > /dev/null; then
+        `$image_name_sv > /dev/null; then
     die "fail to run: $image_name_sv"
 fi
 
