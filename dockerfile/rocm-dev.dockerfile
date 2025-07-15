@@ -39,9 +39,14 @@ RUN apt-get update -y && \
 # Useful packages
 RUN apt-get update -y && \
     apt-get upgrade -y && \
-    apt-get install -y vim zsh zsh-doc curl tmux git less man man-db mlocate jq && \
+    apt-get install -y vim zsh zsh-doc curl tmux git less man man-db jq && \
     apt-get install -y keychain hwloc htop ccache bash-completion graphviz && \
     apt-get install -y libgtest-dev libfmt-dev liblapack-dev libtmglib-dev libopenblas-serial-dev && \
+    if [ "$UBUNTU_VERSION" = "24.04" ]; then \
+      apt-get install -y plocate; \
+    else \
+      apt-get install -y mlocate; \
+    fi && \   
     apt-get clean
 
 # step 2: setup drivers
