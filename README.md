@@ -57,7 +57,7 @@ unified_build_id=100730
     rocm-compute-rocm-dkms-no-npi-hipclang-16414-ubuntu-22.04
 ```
 
-3. Usage
+3. Usage  
 rdh provides three commands to simplify the usages of docker/container. 
 - rd-open  
     open rocm image and attach to a terminal
@@ -105,7 +105,7 @@ rocm instance can be closed from host:
     rd-close
 ```
 
-4. Setup rocsolver image(sv image) for development environment
+4. Setup rocsolver image(sv image) for development environment  
 Pre-requirement: rd-build-docker succeeds
     * Open  ${HOME}/work/rdh/solver/sv-config  
     * Specify solver_src_root and architecture
