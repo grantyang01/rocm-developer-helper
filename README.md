@@ -35,7 +35,7 @@ helper tools for rocm developer, available at [here](https://github.com/grantyan
 
 2. create and use a rocm docker image
 - config
-    * Open  ${HOME}/work/rdh/rocm-dev/scripts/rd-config  
+    * Open  ${HOME}/work/rdh/rocm-dev/rd-config  
     * edit ubuntu_version and unified_build_id  
         + valid ubuntu_version are 22.04 and 24.04
         + unified_build_id is choosed from dashboard as you wish
@@ -107,6 +107,15 @@ rocm instance can be closed from host:
 
 4. Setup rocsolver image(sv image) for development environment
 Pre-requirement: rd-build-docker succeeds
+    * Open  ${HOME}/work/rdh/solver/sv-config  
+    * Specify solver_src_root and architecture
+```bash
+    # relative address to $HOME/work/
+    solver_src_root=./solver
+
+    # GPU architecture: MI300 and MI350
+    architecture="gfx942;gfx950"
+```
 - Build
 ```bash
     # run it in host
@@ -142,9 +151,9 @@ Open a sv(rocsolver) image
     gryang@b3/solver:~/work$    
 ```
 
-rocsolver and related codes are under ${HOME}/work/solver
+rocsolver and related codes are under ${HOME}/work/${solver_src_root}
 ```bash
-        ${HOME}/work/solver
+        ${HOME}/work/${solver_src_root}
         |-- hipblas-common
         |-- hipblaslt
         |-- rocblas
