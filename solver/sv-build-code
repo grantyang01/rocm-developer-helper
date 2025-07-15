@@ -28,8 +28,8 @@ function clone_component() {
     local branch=${1#*/}
 
     log "clone: $comp"
-    local src_dir=$(realpath ${solver_src_root})/${comp,,}    
-    refresh_dir "${src_dir}"
+    local src_dir="$(realpath ${solver_src_root})/${comp,,}"
+    elevate_if_not_root refresh_dir "${src_dir}"
     local rocm_url="https://github.com/ROCm/${comp}"
     if ! git clone "${rocm_url}" -b ${branch} ${src_dir}; then
         clone_status=-1
@@ -50,7 +50,7 @@ function build_component() {
         # build and install
         if ! elevate_if_not_root ./install -i; then
             comp_build_status=-1
-            build_log=$(collect_msg 1 "$build_log" "$comp fail: ./install -ri")
+            build_log=$(collect_msg 1 "$build_log" "$comp fail: ./install -i")
         fi
         if (( comp_build_status == 0 )); then
             build_log=$(collect_msg 0 "$build_log" "$comp build: succ")
