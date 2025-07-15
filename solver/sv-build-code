@@ -54,7 +54,7 @@ function build_component() {
     local comp_build_status=0
     if [[ "$comp" == "rocPRIM" ]]; then
         # build and install
-        if ! elevate_if_not_root ./install -ri; then
+        if ! elevate_if_not_root ./install -i; then
             comp_build_status=-1
             build_log=$(collect_msg 1 "$build_log" "$comp fail: ./install -ri")
         fi
