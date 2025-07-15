@@ -117,7 +117,14 @@ function build_component() {
         fi
         popd
 
-        # debug, clang20 crash while build kernel. client-only now
+        # debug, clang20 crash while build library 
+        #   relWithDebug: library
+        #   debug: client-only now
+        if ! ./install.sh -kn -a "${architecture}"; then
+            comp_build_status=-1
+            build_log=$(collect_msg 1 "$build_log" "$comp fail: ./install.sh -kn -a ${architecture}")
+        fi
+
         if ! ./install.sh --clients-only -g -a "${architecture}"; then
             comp_build_status=-1
             build_log=$(collect_msg 1 "$build_log" "$comp fail: ./install.sh -gn")
