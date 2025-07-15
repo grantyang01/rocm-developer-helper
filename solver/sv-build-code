@@ -85,9 +85,9 @@ function build_component() {
         fi
     elif [[ "$comp" == "hipBLASLt" || "$comp" == "rocBLAS" ]]; then
         # release and depencies
-        if ! ./install.sh -rd -a "${architecture}"; then
+        if ! ./install.sh -d -a "${architecture}"; then
             comp_build_status=-1
-            build_log=$(collect_msg 1 "$build_log" "$comp fail: ./install.sh -rd -a ${architecture}")
+            build_log=$(collect_msg 1 "$build_log" "$comp fail: ./install.sh -d -a ${architecture}")
         fi
 
         # install release
