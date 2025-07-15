@@ -1,0 +1,22 @@
+#!/usr/bin/bash
+# make tools available
+# expose rdh
+rdh_root="$(realpath $0|xargs dirname)/.."
+source ${rdh_root}/activate
+
+# expose self
+bin_dir=$(realpath $0|xargs dirname)
+SELF_TAG="[$(basename $0)]"
+
+# import tools
+source docker-helper
+source rd-config
+source sv-config
+
+# run inside docker instance of $instance_name_rd or "$instance_name_sv"
+if ! is_docker_instance "$instance_name_rd" && \
+   ! is_docker_instance "$instance_name_sv" ; then
+    die "fail: please run it at instance: $instance_name_rd or $instance_name_sv"
+fi
+
+rocsolver-bench -f syevd -n 8192 --evect V --iters 1 --perf 1 -r s

@@ -6,5 +6,8 @@ source rd-config
 image_name_sv=solver-${image_name_rd}
 instance_name_sv=solver
 
-# code branch
+# source root
 solver_src_root=./solver
+
+# GPU architecture
+architecture="gfx942;gfx950"

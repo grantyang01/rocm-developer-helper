@@ -11,12 +11,6 @@ source docker-helper
 source rd-config
 source sv-config
 
-# run inside docker instance of $instance_name_rd
-if ! is_docker_instance "$instance_name_rd" && \
-   ! is_docker_instance "$instance_name_sv" ; then
-    die "fail: please run it at instance: $instance_name_rd or $instance_name_sv"
-fi
-
 function collect_msg() {
     local type=$1
     local log=$2
@@ -139,7 +133,12 @@ function build_component() {
     (( build_status += comp_build_status ))
 }
 
-architecture="gfx942;gfx950"
+# run inside docker instance of $instance_name_rd or "$instance_name_sv"
+if ! is_docker_instance "$instance_name_rd" && \
+   ! is_docker_instance "$instance_name_sv" ; then
+    die "fail: please run it at instance: $instance_name_rd or $instance_name_sv"
+fi
+
 components="rocPRIM/develop `
            `hipBLAS-common/develop `
            `hipBLASLt/develop `
@@ -148,14 +147,12 @@ components="rocPRIM/develop `
 
 clone_status=0
 clone_log=""
-build_status=0
-build_log=""
-
 for curr in $components; do
     clone_component "$curr"
 done
 
-# components="rocSOLVER/develop"
+build_status=0
+build_log=""
 for curr in  $components; do
      build_component "$curr"
 done
