@@ -30,9 +30,7 @@ if ! docker exec -it "$instance_name_rd" bash -c "${rdh_root}/solver/sv-build-co
     log "fail: build solver code"
 fi
 
-# store "$instance_name_rd" to 
-if ! docker commit "$instance_name_rd" "$image_name_sv"; then
-    die "fail: create $image_name_sv"
-fi
+# store "$instance_name_rd" to "$image_name_sv"
+sv_update
 
 close_container "$instance_name_rd"
