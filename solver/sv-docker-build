@@ -31,6 +31,8 @@ if ! docker exec -it "$instance_name_rd" bash -c "${rdh_root}/solver/sv-build-co
 fi
 
 # store "$instance_name_rd" to "$image_name_sv"
-sv-update
+if ! docker commit "$instance_name_rd" "$image_name_sv"; then
+    die "fail: commit $instance_name_rd to $image_name_sv"
+fi
 
 close_container "$instance_name_rd"
