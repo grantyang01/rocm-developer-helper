@@ -31,6 +31,6 @@ if ! docker exec -it "$instance_name_rd" bash -c "${rdh_root}/solver/sv-build-co
 fi
 
 # store "$instance_name_rd" to "$image_name_sv"
-sv_update
+sv-update
 
 close_container "$instance_name_rd"
