@@ -1,5 +1,5 @@
 #!/bin/bash
-
+# depends to tools
 function cmake_build() {
     local src=$1
     local build_type=$2
@@ -34,4 +34,27 @@ function cmake_build() {
             die "fail: make $target"
         fi
     done
+}
+
+function cmake_install() {
+    # default: current dir
+    local build_dir="${1:-.}"
+    local install_dir="$2"
+
+    if [[ -z "$install_dir" ]]; then
+        # default: $ROCM_PATH
+        if [[ ! -z "$ROCM_PATH" ]]; then
+            install_dir="$ROCM_PATH"
+        else
+            die "fail: no install target"
+            return -1
+        fi
+    fi
+
+    if ! elevate_if_not_root cmake --install "$build_dir" --prefix "$install_dir"; then
+        die "fail: cmake --install $build_dir --prefix $ROCM_PATH"
+    fi
+
+    log "succ: cmake --install $build_dir --prefix $ROCM_PATH"
+    return 0
 }

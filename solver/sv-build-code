@@ -7,6 +7,7 @@ bin_dir=$(realpath $0|xargs dirname)
 SELF_TAG="[$(basename $0)]"
 
 # import tools
+source cmake-helper
 source docker-helper
 source rd-config
 source sv-config
@@ -65,12 +66,10 @@ function build_component() {
         fi
 
         # build and install
-        pushd ./build
-        if ! elevate_if_not_root cmake --install . --prefix "$ROCM_PATH"; then
+        if ! cmake_install "./build"; then
             comp_build_status=-1
-            build_log=$(collect_msg 1 "$build_log" "$comp fail: make install")
+            build_log=$(collect_msg 1 "$build_log" "$comp fail: cmake_install ./build")
         fi
-        popd
 
         if (( comp_build_status == 0 )); then
             build_log=$(collect_msg 0 "$build_log" "$comp build: succ")
@@ -85,12 +84,10 @@ function build_component() {
         fi
 
         # install release
-        pushd ./build/release
-        if ! elevate_if_not_root cmake --install . --prefix "$ROCM_PATH"; then
+        if ! cmake_install "./build/release"; then
             comp_build_status=-1
-            build_log=$(collect_msg 1 "$build_log" "$comp fail: make install")
+            build_log=$(collect_msg 1 "$build_log" "$comp fail: cmake_install ./build/release")
         fi
-        popd
 
         # debug
         if ! ./install.sh -g -a "${architecture}"; then
@@ -110,12 +107,10 @@ function build_component() {
             build_log=$(collect_msg 1 "$build_log" "$comp fail: ./install.sh -cnd -a ${architecture}")
         fi
         # install release
-        pushd ./build/release
-        if ! elevate_if_not_root cmake --install . --prefix "$ROCM_PATH"; then
+        if ! cmake_install "./build/release"; then
             comp_build_status=-1
-            build_log=$(collect_msg 1 "$build_log" "$comp fail: make install")
+            build_log=$(collect_msg 1 "$build_log" "$comp fail: cmake_install ./build/release")
         fi
-        popd
 
         # debug, clang20 crash while build library 
         #   relWithDebug: library
