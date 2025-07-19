@@ -29,7 +29,7 @@ if ! docker run -it `
         `--security-opt seccomp=unconfined `
         `-p 127.0.0.1:9346:9339 `
         `--name $instance_name_sv `
-        `--hostname $(get_host_alias)/$instance_name_sv `
+        `--hostname $(hostname -s)/$instance_name_sv `
         `$image_name_sv > /dev/null; then
     die "fail to run: $image_name_sv"
 fi

@@ -259,8 +259,8 @@ function elevate_if_not_root() {
     return $?
 }
 
-function get_host_alias() {
-    local alias=$(awk -v host_name="$(hostname)" '
+function get_alia_name() {
+    local alia=$(awk -v host_name="$(hostname)" '
         tolower($1) == "host" { 
             host = $2 
         }
@@ -268,10 +268,32 @@ function get_host_alias() {
             print host 
         }
         ' ~/.ssh/config)
-    if [[ ! -z "$alias" ]]; then
-        echo "$alias"
-    else
-        # fallback to hostname
-        hostname -s
+    if [[ ! -z "$alia" ]]; then
+        echo "$alia"
+        return 0
     fi
+    return -1
+}
+
+function set_ps1() {
+    local alia=$(get_alia_name)
+    local alias_path=""
+    if [[ ! -z "$alia" ]]; then
+        alias_path="$alia/"
+    fi
+
+    local new_ps3='\[\e]0;\u@'`
+      `"$alias_path"`
+      `'\h: \w\a\]'`
+      `'${debian_chroot:+($debian_chroot)}'`
+      `'\[\033[01;32m\]\u@'`
+      `"$alias_path"`
+      `'\h\[\033[00m\]:\[\033[01;33m\]\w\[\033[00m\]\$'
+    echo PS1="\"$new_ps3\"" | tee -a ~/.bashrc
+    return 0
+}
+
+function modify_ls_color() {
+    # make directories brighter
+    echo "export LS_COLORS=\"\$LS_COLORS:di=01;33\"" | tee -a ~/.bashrc
 }

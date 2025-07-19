@@ -28,7 +28,7 @@ if ! docker run -it `
         `--cap-add=SYS_PTRACE `
         `--security-opt seccomp=unconfined `
         `--name $instance_name_rd `
-        `--hostname $(get_host_alias)/$instance_name_rd `
+        `--hostname $(hostname -s)/$instance_name_rd `
         `$image_name_rd > /dev/null; then
     die "fail to run: $image_name_rd"
 fi
