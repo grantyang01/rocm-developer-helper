@@ -50,7 +50,7 @@ pushd "${rdh_root}/dockerfile"
 get_rocm_gpg_file
 
 # get rocm_version
-rocm_ver=$(get_rocm_ver $unified_build_id)
+rocm_ver=$(rocm_ver:-get_rocm_ver $unified_build_id)
 if [[ -z "$rocm_ver" ]]; then
     die "fail: rocm_ver not available for $$unified_build_id"
 fi
