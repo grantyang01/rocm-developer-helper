@@ -71,6 +71,10 @@ function ls_uid() {
 }    
 
 function get_rocm_ver() {
+    if (( $# == 0 )); then
+        retun -1
+    fi
+
     local unified_build=$1
     local api_url
     if (( unified_build >= 100000 )); then

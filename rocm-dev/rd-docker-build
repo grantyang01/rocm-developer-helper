@@ -12,6 +12,7 @@ SELF_TAG="[$(basename $0)]"
 source docker-helper
 source rd-config
 source os-helper
+source repo-helper
 
 function get_rocm_gpg_file() {
     # check https://mkmartifactory.amd.com/artifactory/list/amdgpu-deb to get a available installer.
@@ -50,9 +51,9 @@ pushd "${rdh_root}/dockerfile"
 get_rocm_gpg_file
 
 # get rocm_version
-rocm_ver=$(rocm_ver:-get_rocm_ver $unified_build_id)
+rocm_ver=${rocm_ver:-$(get_rocm_ver $unified_build_id)}
 if [[ -z "$rocm_ver" ]]; then
-    die "fail: rocm_ver not available for $$unified_build_id"
+    die "fail: rocm_ver not available for $unified_build_id"
 fi
 
 create_user_options="--build-arg DUID=$(id -u) `
