@@ -10,17 +10,17 @@ ubuntu_version=22.04
 #    1. http://bas.amd.com/dashboard   -- new server, with uid >= 100000
 #    2. http://mkdcvlnxapp01.amd.com/dashboard/  --old server, uid < 100000
 # latest
-# unified_build_id=100730
+unified_build_id=100794
 
 # ROCm 6.4.2 RC4
 # unified_build_id=25175
 
 # below could be manually set if unified_build_id isn't available, or the dashboard server is not available
 # unified_build_id=100730
-grfx_build=2189106
+grfx_build=2191870
 rocm_branch=compute-rocm-dkms-no-npi-hipclang
-rocm_build=16414
-rocm_ver=7.0.0
+rocm_build=16439
+rocm_ver=7.1.0
 
 # search grfx_build grfx_build rocm_build from unified_build_id
 if [[ ! -z "$unified_build_id" ]]; then
