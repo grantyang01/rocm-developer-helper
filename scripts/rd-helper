@@ -135,33 +135,14 @@ function generate_profile() {
 }
 
 function build_clr(){
-    local CLR_BUILD="${CLR_DIR}/build"
-    refresh_dir "$CLR_BUILD"
-    pushd "$CLR_BUILD"
-
-    . "$PYTHON_ENV/bin/activate"
-    if ! cmake `
-        `-DHIP_COMMON_DIR=$HIP_DIR `
-        `-DHIP_PLATFORM=amd `
-        `-DCMAKE_PREFIX_PATH="/opt/rocm/" `
-        `-DCMAKE_INSTALL_PREFIX=/opt/rocm `
-        `-DHIP_CATCH_TEST=0 `
-        `-DCLR_BUILD_HIP=ON `
-        `-DCLR_BUILD_OCL=OFF ..; then
-        die "cmake fail: clr"
-    fi
-    log "cmake successfuly: clr"
-
-    if ! make -j $(nproc); then
-        die "make fail: clr"
-    fi
-    log "make successfuly: clr"
-    
-    if ! sudo make install; then 
-        die "install fail: clr"
-    fi
-    log "install successfuly: clr"
-    popd
+    local cmake_options="-DHIP_COMMON_DIR=$HIP_DIR `
+                        `-DHIP_PLATFORM=amd `
+                        `-DCMAKE_PREFIX_PATH=$ROCM_PATH `
+                        `-DCMAKE_INSTALL_PREFIX=$ROCM_PATH `
+                        `-DHIP_CATCH_TEST=0 `
+                        `-DCLR_BUILD_HIP=ON `
+                        `-DCLR_BUILD_OCL=OFF"
+    cmake_build "${CLR_DIR}" "all" $cmake_options
 }
 
 function build_hip_tests() {
@@ -277,6 +258,7 @@ SELF_TAG="[$(basename $0)]"
 . package-helper
 . git-helper
 . docker-helper
+. cmake-helper
 
 # init parameters
 internal_repos=1

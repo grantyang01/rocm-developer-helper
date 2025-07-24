@@ -9,6 +9,10 @@ function cmake_build() {
         builds=Debug
     elif [[ "${build_type,,}" == release || "${build_type,,}" == rel ]]; then
         builds=Release
+    elif [[ "${build_type,,}" == releasewithdbginfo ]]; then
+        builds=RelWithDebInfo
+    elif [[ "${build_type,,}" == minsizerel ]]; then
+        builds=MinSizeRel
     elif [[ "${build_type,,}" == all ]]; then
         builds="Debug Release"
     else
@@ -17,13 +21,8 @@ function cmake_build() {
 
     for build in $builds; do
         log "build $build: $src"
-        local dbg_option="-D CMAKE_BUILD_TYPE=$build"
-        local target
-        if [[ "$build" == "Debug" ]]; then
-            target="$src/build-dbg"
-        else
-            target="$src/build"
-        fi
+        local dbg_option="-DCMAKE_BUILD_TYPE=$build"
+        local target="$src/build-${build,,}"
 
         refresh_dir "$target"
         if ! cmake -S "$src" -B "$target" $dbg_option $extra_options; then

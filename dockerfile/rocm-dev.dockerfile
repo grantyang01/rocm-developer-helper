@@ -26,7 +26,7 @@ ENV PATH=/opt/rocm-${ROCM_VER}/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr
 # rocm dev required packages
 RUN apt-get update -y && \
     apt-get upgrade -y && \
-    apt-get install -y ca-certificates cmake git git-lfs doxygen wget libssl-dev zlib1g-dev libfmt-dev python3-venv && \
+    apt-get install -y ca-certificates cmake git git-lfs doxygen wget libssl-dev zlib1g-dev libfmt-dev python3-venv python3-pip && \
     apt-get clean
 
 # rocBLAS rocSolver required packages
@@ -34,6 +34,15 @@ RUN apt-get update -y && \
     apt-get upgrade -y && \
     apt-get install -y dumb-init sudo && \
     apt-get install -y build-essential gfortran cmake-format clang-format locales-all && \
+    apt-get clean
+
+# clr
+RUN python3 -m pip install cxxheaderparser
+
+# rocprofile sdk required packages
+RUN apt-get update -y && \
+    apt-get upgrade -y && \
+    apt-get install -y libdw-dev libsqlite3-dev && \
     apt-get clean
 
 # Useful packages
@@ -76,6 +85,11 @@ RUN apt-get update -y && \
 # custom step: pkgs for benchmark and test of rocsolver
 RUN apt-get update -y && \
     apt-get install -y rocsolver-benchmarks rocsolver-clients rocsolver-tests && \
+    apt-get clean
+
+# build clr need packages
+RUN apt-get update -y && \
+    apt-get install rocm-hip-libraries rocm-llvm-dev -y && \
     apt-get clean
 
 # update cmake to 3.25.2 for ubuntu 22.04(default 3.22, which will fail rocBLAS build)
