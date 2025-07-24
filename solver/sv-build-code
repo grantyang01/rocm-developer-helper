@@ -27,9 +27,10 @@ function collect_msg() {
 function clone_component() {
     local comp=${1%/*}
     local branch=${1#*/}
+    local src_root=$2
 
     log "clone: $comp"
-    local src_dir="$(realpath ${solver_src_root})/${comp,,}"
+    local src_dir="$(realpath ${src_root})/${comp,,}"
     elevate_if_not_root rm -rf "${src_dir}"
     local rocm_url="https://github.com/ROCm/${comp}"
     if ! git clone "${rocm_url}" -b ${branch} ${src_dir}; then
@@ -150,7 +151,7 @@ components="rocPRIM/develop `
 clone_status=0
 clone_log=""
 for curr in $components; do
-    clone_component "$curr"
+    clone_component "$curr" "$solver_src_root"
 done
 
 build_status=0

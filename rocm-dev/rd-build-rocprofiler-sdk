@@ -1,0 +1,39 @@
+#!/usr/bin/bash
+rdh_root="$(realpath $0|xargs dirname)/.."
+source ${rdh_root}/activate
+
+# expose self
+bin_dir=$(realpath $0|xargs dirname)
+
+# import tools
+source docker-helper
+source rd-config
+source sv-config
+source git-helper
+source cmake-helper
+
+# run inside docker instance of $instance_name_rd or "$instance_name_sv"
+if ! is_docker_instance "$instance_name_rd" && ! is_docker_instance "$instance_name_sv" ; then
+    die "fail: please run it at instance: $instance_name_rd or $instance_name_sv"
+fi
+
+# rocprofiler-sdk, pull 634
+setup_repo `
+    `"rocprofiler-sdk" `
+    `"./rocprofiler-sdk" `
+    `"https://github.com/ROCm/rocprofiler-sdk.git" `
+    `"amd-staging"
+
+cmake_build "./rocprofiler-sdk" "all" `
+    `-DCMAKE_INSTALL_PREFIX=$ROCM_PATH `
+    `-DCMAKE_PREFIX_PATH=$ROCM_PATH
+
+# aqlprofile, pull 171
+setup_repo `
+    `"aqlprofile" `
+    `"./aqlprofile" `
+    `"git@github.com:AMD-ROCm-Internal/aqlprofile" `
+    `"amd-staging"
+
+cmake_build "./aqlprofile" "all" `
+    `CMAKE_PREFIX_PATH=${ROCM_PATH}/lib:${ROCM_PATH}/include/hsa

@@ -12,7 +12,6 @@ SELF_TAG="[$(basename $0)]"
 source docker-helper
 source rd-config
 source os-helper
-source repo-helper
 
 function get_rocm_gpg_file() {
     # check https://mkmartifactory.amd.com/artifactory/list/amdgpu-deb to get a available installer.

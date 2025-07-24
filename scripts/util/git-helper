@@ -46,6 +46,7 @@ function setup_repo() {
     local target_path=$2
     local url=$3
     local branch=$4
+    local pull_request=$5
 
     if ! is_dir_valid_repo "$target_path"; then
         log "clone $name to $target_path ..."
@@ -56,17 +57,32 @@ function setup_repo() {
     fi
 
     pushd "$target_path"
-    log "switch to: $branch ..."
+    # check out and verify branch
     if [[ ! -z "$branch" ]]; then
-        if ! git checkout "$branch"; then
-            die "failed to switch: $branch"
+      log "switch to: $branch ..."
+      if [[ ! -z "$branch" ]]; then
+          if ! git checkout "$branch"; then
+              die "failed to switch: $branch"
+          fi
+      fi
+
+      log "validate $name ..."
+      if ! git branch | grep "\* $branch" &>/dev/null; then
+          die "failed to validate: $name/$branch"
+      fi
+    fi
+
+    if [[ ! -z "$pull_request" ]]; then
+    
+        if ! git fetch origin "pull/$pull_request/head:pr-$pull_request"; then
+          die "failed: fetch fetch origin pull/$pull_request/head:pr-$pull_request"
+        fi
+
+        if ! git checkout "pr-$pull_request"; then
+          die "failed: checkout pr-$pull_request"
         fi
     fi
 
-    log "validate $name ..."
-    if ! git branch | grep "\* $branch" &>/dev/null; then
-        die "failed to validate: $name/$branch"
-    fi
     popd
     log "repo setup successfully: <$name/$branch>"
 }

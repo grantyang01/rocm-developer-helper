@@ -1,0 +1,25 @@
+#!/usr/bin/bash
+rdh_root="$(realpath $0|xargs dirname)/.."
+source ${rdh_root}/activate
+
+# expose self
+bin_dir=$(realpath $0|xargs dirname)
+
+# import tools
+source docker-helper
+source rd-config
+source sv-config
+
+# run inside docker instance of $instance_name_rd or "$instance_name_sv"
+if ! is_docker_instance "$instance_name_rd" && \
+   ! is_docker_instance "$instance_name_sv" ; then
+    die "fail: please run it at instance: $instance_name_rd or $instance_name_sv"
+fi
+
+if ! rd-helper -c "amd-staging"; then
+    die "fail: clone clr/hip/hip-tests"
+fi
+
+if ! rd-helper -b "clr"; then
+    die "fail: build clr"
+fi
