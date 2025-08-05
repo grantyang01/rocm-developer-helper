@@ -15,3 +15,5 @@ PATH=${scripts_dir}:${util_dir}:${rocm_dev}:${shisa_dir}:${misa_dir}:${solver_di
 # expose git helper functions
 source tools
 source git-cmd-helper
+source cmake-helper
+source docker-helper
