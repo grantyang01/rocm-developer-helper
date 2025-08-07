@@ -17,3 +17,4 @@ source tools
 source git-cmd-helper
 source cmake-helper
 source docker-helper
+source repo-helper
