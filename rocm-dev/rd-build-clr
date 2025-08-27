@@ -20,6 +20,10 @@ if ! rd-helper -c "amd-staging"; then
     die "fail: clone clr/hip/hip-tests"
 fi
 
-if ! rd-helper -b "clr"; then
-    die "fail: build clr"
+if ! rd-helper -b "all"; then
+    die "fail: build clr/hip-tests"
+fi
+
+if ! cmake_install "./clr/build-release"; then
+    die "fail: install clr"
 fi

@@ -4,7 +4,7 @@ function cmake_build() {
     local src=$1
     local build_type=$2
     local extra_options="${@:3}"
-    
+    local builds
     if [[ "${build_type,,}" == debug || "${build_type,,}" == dbg ]]; then
         builds=Debug
     elif [[ "${build_type,,}" == release || "${build_type,,}" == rel ]]; then
@@ -19,6 +19,7 @@ function cmake_build() {
         die "unknown build_type: $build_type"
     fi
 
+    local build
     for build in $builds; do
         log "build $build: $src"
         local dbg_option="-DCMAKE_BUILD_TYPE=$build"

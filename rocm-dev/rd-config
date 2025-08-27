@@ -13,10 +13,16 @@ ubuntu_version=22.04
 # unified_build_id=100913
 # below could be manually set if unified_build_id isn't available, or the dashboard server is not available
 #    ls_uid <uid>
-grfx_build=2197890
+grfx_build=2205990
 rocm_branch=compute-rocm-dkms-no-npi-hipclang
-rocm_build=16494
+rocm_build=16568
 rocm_ver=7.1.0
+
+# old
+#grfx_build=2197890
+#rocm_branch=compute-rocm-dkms-no-npi-hipclang
+#rocm_build=16494
+#rocm_ver=7.1.0
 
 # 25.20 RC-Prime4
 # unified_build_id=100876

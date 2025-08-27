@@ -297,3 +297,7 @@ function modify_ls_color() {
     # make directories brighter
     echo "export LS_COLORS=\"\$LS_COLORS:di=01;33\"" | tee -a ~/.bashrc
 }
+
+function nf() {
+    numfmt --to=iec --suffix=B $1
+}

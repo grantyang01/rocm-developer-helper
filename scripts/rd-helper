@@ -147,21 +147,26 @@ function build_clr(){
 
 function build_hip_tests() {
     # hip-tests
-    local HIPTESTS_BUILD="${HIPTESTS_DIR}/build"
-    refresh_dir "$HIPTESTS_BUILD"
-    pushd "$HIPTESTS_BUILD"
-    if ! cmake ../catch `
-         `-DHIP_PLATFORM=amd `
-         `-DHIP_PATH=/opt/rocm; then
-         die "cmake fail: hip-tests"
-    fi
-    log "cmake successfuly: hip-tests"
+    local builds="Release Debug"
+    local cmake_options="-DHIP_PLATFORM=amd `
+                        `-DHIP_PATH=/opt/rocm"
+    local build
+    for build in $builds; do
+        local HIPTESTS_BUILD="${HIPTESTS_DIR}/build-${build,,}"
+        local dbg_option="-DCMAKE_BUILD_TYPE=$build"
+        refresh_dir "$HIPTESTS_BUILD"
+        pushd "$HIPTESTS_BUILD"
+        if ! cmake ../catch $cmake_options $dbg_option; then
+            die "cmake fail: hip-tests"
+        fi
+        log "cmake successfuly: hip-tests"
 
-    if ! make build_tests -j $(nproc); then
-        die "make fail: hip-tests"
-    fi
-    log "make successfuly: hip-tests"
-    popd
+        if ! make build_tests -j $(nproc); then
+            die "make fail: hip-tests"
+        fi
+        log "make successfuly: hip-tests"
+        popd
+    done
 }
 
 function build_component() {
@@ -176,7 +181,7 @@ function build_component() {
 
 function unit_test() {
     local group="$1"
-    local path="${HIPTESTS_DIR}/build/catch_tests/unit"
+    local path="${HIPTESTS_DIR}/build-release/catch_tests/unit"
     if [[ ! -d "$path" ]]; then
         die "unit test not found: $path"
     fi
