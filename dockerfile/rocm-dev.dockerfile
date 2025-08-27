@@ -47,6 +47,9 @@ RUN apt-get update -y && \
 # clr
 RUN python3 -m pip install cxxheaderparser
 
+# unknown below python pkgs missed?
+RUN python3 -m pip install CppHeaderParser joblib ply psutil packaging msgpack regex
+
 # rocprofile sdk required packages
 RUN apt-get update -y && \
     apt-get upgrade -y && \
