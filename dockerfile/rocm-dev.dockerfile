@@ -29,6 +29,14 @@ RUN apt-get update -y && \
     apt-get install -y ca-certificates cmake git git-lfs doxygen wget libssl-dev zlib1g-dev libfmt-dev python3-venv python3-pip && \
     apt-get clean
 
+# hipblaslt required packages
+RUN apt-get update -y && \
+    apt-get upgrade -y && \
+    apt-get install -y libblis-dev && \
+    apt-get clean
+
+RUN python3 -m pip install packaging
+
 # rocBLAS rocSolver required packages
 RUN apt-get update -y && \
     apt-get upgrade -y && \

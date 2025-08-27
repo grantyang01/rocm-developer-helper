@@ -1,0 +1,32 @@
+#!/usr/bin/bash
+rdh_root="$(realpath $0|xargs dirname)/.."
+source ${rdh_root}/activate
+
+# expose self
+bin_dir=$(realpath $0|xargs dirname)
+
+# import tools
+source docker-helper
+source rd-config
+source sv-config
+source git-helper
+source cmake-helper
+
+
+# run inside docker instance of $instance_name_rd or "$instance_name_sv"
+if ! is_docker_instance "$instance_name_rd" && \
+   ! is_docker_instance "$instance_name_sv" ; then
+    die "fail: please run it at instance: $instance_name_rd or $instance_name_sv"
+fi
+
+# rocm-examples
+setup_repo `
+    `"rocm-examples" `
+    `"./rocm-examples" `
+    `"https://github.com/ROCm/rocm-examples.git" `
+    `"amd-staging"
+
+#cmake_build "./rocm-examples" "all"
+cmake_build "./rocm-examples" "debug" `
+    `-DCMAKE_HIP_ARCHITECTURES=${architecture} `
+    `-DGPU_RUNTIME=HIP
