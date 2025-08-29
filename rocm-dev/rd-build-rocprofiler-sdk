@@ -32,7 +32,7 @@ if ! cmake_build "./rocprofiler-sdk" "all" `
     die "fail: build rocprofiler-sdk"
 fi
 
-if ! cmake_install ./rocprofiler-sdk/build/release; then
+if ! cmake_install ./rocprofiler-sdk/build-release; then
     die "fail: install rocprofiler-sdk"
 fi
 
@@ -50,7 +50,7 @@ if ! cmake_build "./aqlprofile" "all" `
     die "fail: build aqlprofile"
 fi
 
-if ! cmake_install ./aqlprofile/build/release; then
+if ! cmake_install ./aqlprofile/build-release; then
     die "fail: install aqlprofile"
 fi
 
