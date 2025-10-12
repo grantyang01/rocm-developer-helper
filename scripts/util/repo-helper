@@ -65,12 +65,16 @@ function ls_uid() {
         return -1
     fi
     verify_amd_unified_build_id "$1"
+    printf "rd-config:\n"
     printf "grfx_build=%s\n" "$grfx_build"
     printf "rocm_branch=%s\n" "$rocm_branch"
     printf "rocm_build=%s\n"  "$rocm_build"
 
     local rocm_verion=$(get_rocm_ver $1)
     printf "rocm_ver=%s\n"  "$rocm_verion"
+
+    printf "\namdgpu-repo:\n"
+    printf "sudo amdgpu-repo --amdgpu-build=%s --rocm-build=%s/%s\n" "$grfx_build" "$rocm_branch" "$rocm_build"
 }    
 
 function get_rocm_ver() {
