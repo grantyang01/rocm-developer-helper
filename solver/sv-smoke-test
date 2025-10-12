@@ -19,4 +19,4 @@ if ! is_docker_instance "$instance_name_rd" && \
     die "fail: please run it at instance: $instance_name_rd or $instance_name_sv"
 fi
 
-rocsolver-bench -f syevd -n 8192 --evect V --iters 1 --perf 1 -r s
+rocsolver-bench -f syevd -n 8192 --evect V --iters 1 --perf 1 -r s "$@"

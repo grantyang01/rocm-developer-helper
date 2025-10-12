@@ -12,15 +12,15 @@ RUN sudo apt-get update \
  libio-aio-perl libjson-perl libmoose-perl libpadwalker-perl libscalar-list-utils-perl libcoro-perl libexcel-writer-xlsx-perl
 
 RUN curl -O https://download.visualstudio.microsoft.com/download/pr/fea239ad-fd47-4764-aa71-6a147a82f632/20ee58b0bf08ae9f6e76e37ba3765c57/dotnet-runtime-3.1.32-linux-x64.tar.gz \
- && mkdir -p /dotnet \
- && tar zxf dotnet-runtime-3.1.32-linux-x64.tar.gz -C /dotnet
+ && sudo mkdir -p /dotnet \
+ && sudo tar zxf dotnet-runtime-3.1.32-linux-x64.tar.gz -C /dotnet
 ENV DOTNET_ROOT="/dotnet" \
     PATH="$PATH:/dotnet"
 
 RUN curl -LO https://get.haskellstack.org/stable/linux-x86_64.tar.gz \
- && mkdir -p /stack \
- && tar zxf linux-x86_64.tar.gz -C /stack \
- && mv /stack/stack-*/* /stack
+ && sudo mkdir -p /stack \
+ && sudo tar zxf linux-x86_64.tar.gz -C /stack \
+ && sudo mv /stack/stack-*/* /stack
 ENV PATH="$PATH:/stack"
 
 # Install GHC for Shader Processor (not required but helps to reduce the build time when deployed from VS)

@@ -61,14 +61,15 @@ function deploy_linux() {
 
     # step 5: gpu-interface setup
     log "5. ++++++++++++++++++++ gpu-interface setup +++++++++++++++++"
-    if ! gi-run setup; then
-        die "fail: gi-run gpu-interface"
+    if ! gi-open setup; then
+        die "fail: gi-open gpu-interface"
     fi
     log "5. ++++++++++++++++++++ gpu-interface setup: sucess +++++++++++++++++"
+    sudo chown -R ${USER}:${USER} $target/bin $target/binDebug
 
     # step 6: shisa setup
     log "6. ++++++++++++++++++++ shisa setup +++++++++++++++++"
-    if ! s-run setup; then
+    if ! s-open setup; then
         die "fail: s-run setup shisa doker"
     fi
     log "6. ++++++++++++++++++++ shisa setup: sucess +++++++++++++++++"

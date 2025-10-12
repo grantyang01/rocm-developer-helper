@@ -116,7 +116,7 @@ function setup_gi() {
                 `Release `
                 `-DGPU_INTERFACE_PAL_SUPPORT=ON `
                 `-DGPU_INTERFACE_HSA_SUPPORT=ON `
-                `-DHSA_STATIC_LIBRARY=${rocr_path}/build/runtime/hsa-runtime/libhsa-runtime64.a; then
+                `-DHSA_STATIC_LIBRARY=${rocr_path}/build-release/runtime/hsa-runtime/libhsa-runtime64.a; then
         die "fail: build release gpu_interface"
     fi
 
@@ -125,7 +125,7 @@ function setup_gi() {
                 `Debug `
                 `-DGPU_INTERFACE_PAL_SUPPORT=ON `
                 `-DGPU_INTERFACE_HSA_SUPPORT=ON `
-                `-DHSA_STATIC_LIBRARY=${rocr_path}/build-dbg/runtime/hsa-runtime/libhsa-runtime64.a; then
+                `-DHSA_STATIC_LIBRARY=${rocr_path}/build-debug/runtime/hsa-runtime/libhsa-runtime64.a; then
         die "fail: build debug gpu_interface"
     fi
 

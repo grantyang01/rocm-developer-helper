@@ -22,4 +22,4 @@ fi
 rocprofv3 --att -d out_n8192 -r -D \
           --summary-output-file sumd_n8192.log \
           --output-format pftrace csv \
-          -- rocsolver-bench -f syevd -n 8192 --evect V --iters 1 --perf 1 -r s
+          -- rocsolver-bench -f syevd -n 8192 --evect V --iters 1 --perf 1 -r s "$@"

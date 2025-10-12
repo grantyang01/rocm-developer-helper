@@ -27,7 +27,6 @@ if ! docker run -it `
         `--device=/dev/dri `
         `--cap-add=SYS_PTRACE `
         `--security-opt seccomp=unconfined `
-        `-p 127.0.0.1:9346:9339 `
         `--name $instance_name_sv `
         `--hostname $(hostname -s)/$instance_name_sv `
         `$image_name_sv > /dev/null; then

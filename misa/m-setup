@@ -20,6 +20,8 @@ function setup_misa() {
         die "fail to create: $target"
     fi
 
+    # https://github.com/ROCm/MISA.git
+    #
     if ! git clone git@github.com:Kirpich30000/MISA.git -b "$misa_branch" "$target"; then
         die "fail: clone misa branch $misa_branch"
     fi
