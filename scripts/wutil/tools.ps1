@@ -1,4 +1,4 @@
-function Check-Property {
+function CheckProperty {
     param (
         [string]$PropertyName
     )
@@ -22,9 +22,9 @@ function Check-Property {
 }
 
 # Example usage:
-# Check-Property -PropertyName "HyperVRequirementVirtualizationFirmwareEnabled"
+# CheckProperty -PropertyName "HyperVRequirementVirtualizationFirmwareEnabled"
 
-function Is-PackageInstalled {
+function IsPackageInstalled {
     param (
         [Parameter(Mandatory = $true)]
         [string]$PackageId
@@ -44,7 +44,7 @@ function Is-PackageInstalled {
     }
 }
 
-function Is-PackageAvailable {
+function IsPackageAvailable {
     param (
         [Parameter(Mandatory = $true)]
         [string]$PackageId
@@ -64,17 +64,17 @@ function Is-PackageAvailable {
     }
 }
 
-function Install-Package {
+function InstallPackage {
     param (
         [Parameter(Mandatory = $true)][string]$PackageId,
         [scriptblock]$VerifyCommand = $null
     )
     try {
-        if (Is-PackageInstalled -PackageId $PackageId) {
+        if (IsPackageInstalled -PackageId $PackageId) {
             Write-Output "Package '$PackageId' is already installed."
             return $true
         }
-        if (-not (Is-PackageAvailable -PackageId $PackageId)) {
+        if (-not (IsPackageAvailable -PackageId $PackageId)) {
             Write-Error "Package '$PackageId' is not available remotely."
             return $false
         }
@@ -96,10 +96,10 @@ function Install-Package {
     }
 }
 
-function Uninstall-Package {
+function UninstallPackage {
     param ([Parameter(Mandatory = $true)][string]$PackageId)
     try {
-        if (-not (Is-PackageInstalled -PackageId $PackageId)) {
+        if (-not (IsPackageInstalled -PackageId $PackageId)) {
             Write-Output "Package '$PackageId' is not installed. Skipping uninstall."
             return $true
         }
@@ -115,15 +115,24 @@ function Uninstall-Package {
 }
 
 # Example usage:
+# latest power shell
+InstallPackage -PackageId 'Microsoft.PowerShell'
+
+# UninstallPackage -PackageId 'Microsoft.PowerShell'
+# winget search Microsoft.PowerShell
+
+# vscode
+InstallPackage -PackageId 'Microsoft.VisualStudioCode'
+
 
 # Install Git
-Install-Package -PackageId 'Git.Git' -VerifyCommand { git --version }
+InstallPackage -PackageId 'Git.Git' -VerifyCommand { git --version }
 
 # Install Git LFS
-Install-Package -PackageId 'GitHub.GitLFS' -VerifyCommand { git lfs version }
+# InstallPackage -PackageId 'GitHub.GitLFS' -VerifyCommand { git lfs version }
 
 # Uninstall Git
-Uninstall-Package -PackageId 'Git.Git'
+# UninstallPackage -PackageId 'Git.Git'
 
 # Uninstall Git LFS
-Uninstall-Package -PackageId 'GitHub.GitLFS'
+# UninstallPackage -PackageId 'GitHub.GitLFS'
