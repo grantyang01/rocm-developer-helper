@@ -301,3 +301,35 @@ function modify_ls_color() {
 function nf() {
     numfmt --to=iec --suffix=B $1
 }
+
+function winpath() {
+    # Check if wslpath command exists
+    if ! which wslpath >/dev/null 2>&1; then
+        log "wslpath command not found (WSL only)"
+        return -1
+    fi
+    
+    if [ $# -eq 0 ]; then
+        log "Usage: winpath <windows_path>\n`
+            `Example: winpath 'C:\\work\\rdh\\scripts\\wutil\\wsetup.ps1'"
+        return -1
+    fi
+    
+    wslpath "$1"
+    return 0
+}
+alias wp='winpath'
+
+# Open PDF with evince dark mode
+function pdfopen() {
+    # Convert Windows path to Linux path using winpath function
+    local linux_path=$(winpath "$1")
+    if [ $? -ne 0 ]; then
+        return -1
+    fi
+    
+    # Open evince with specific window size (1024x768)
+    evince "$linux_path" 2>/dev/null &
+    return 0
+}
+alias po='pdfopen'
