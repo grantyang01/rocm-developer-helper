@@ -95,6 +95,18 @@ function CheckProperty {
 # Example usage:
 # CheckProperty -PropertyName "HyperVRequirementVirtualizationFirmwareEnabled"
 
+function IsAdmin {
+    $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+    $principal = New-Object Security.Principal.WindowsPrincipal($identity)
+    $isAdmin = $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+    if ($isAdmin) {
+        Write-Output "This terminal is running as administrator."
+    } else {
+        Write-Output "This terminal is NOT running as administrator."
+    }
+    return $isAdmin
+}
+
 function Get-EnvVar {
     param (
         [Parameter(Mandatory = $true)][string]$Name,
@@ -269,11 +281,6 @@ function UninstallPackage {
 
 # UninstallPackage -PackageId 'Microsoft.PowerShell'
 # winget search Microsoft.PowerShell
-
-# install python with 
-# InstallPackage -PackageId 'Python.Python.3.12'
-# pip install PyYAML
-
 
 # vscode
 # InstallPackage -PackageId 'Microsoft.VisualStudioCode'

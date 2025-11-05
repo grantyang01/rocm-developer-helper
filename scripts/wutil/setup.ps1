@@ -2,12 +2,6 @@
 function Install-Chocolatey {
     
     try {
-        # Check if running as administrator
-        if (-not (IsAdmin)) {
-            Write-Error "Administrator privileges required to install Chocolatey!"
-            throw "Installation failed: Not running as administrator"
-        }
-
         Write-Host "Installing Chocolatey..." -ForegroundColor Green
 
         # Check if Chocolatey is already installed
@@ -34,27 +28,6 @@ function Install-Chocolatey {
     }
     catch {
         Write-Error "Failed to install Chocolatey: $($_.Exception.Message)"
-        throw
-    }
-}
-
-function Install-Haskell {
-    try {
-        # Check if running as administrator
-        if (-not (IsAdmin)) {
-            Write-Error "Administrator privileges required to install Haskell tools!"
-            throw "Installation failed: Not running as administrator"
-        }
-
-        Write-Host "Installing Haskell tools..." -ForegroundColor Green
-        
-        choco install haskell-stack -y
-        choco install ghc -y
-        
-        Write-Host "Haskell tools installation completed!" -ForegroundColor Green
-    }
-    catch {
-        Write-Error "Failed to install Haskell tools: $($_.Exception.Message)"
         throw
     }
 }
