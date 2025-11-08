@@ -1,0 +1,118 @@
+. "$PSScriptRoot\tools.ps1"
+
+function Install-DevelopmentTools {
+    Write-Host "Installing development tools..." -ForegroundColor Green
+    
+    try {
+        # sshfs-win
+        InstallPackage -PackageId 'SSHFS-Win.SSHFS-Win' `
+                       -VerifyCommand { Test-Path "C:\Program Files\SSHFS-Win\bin\sshfs.exe" }
+
+        # chrome
+        InstallPackage -PackageId 'Google.Chrome' `
+                       -VerifyCommand { Test-Path "C:\Program Files\Google\Chrome\Application\chrome.exe" }
+
+        # pdf reader
+        InstallPackage -PackageId 'Adobe.Acrobat.Reader.64-bit' `
+               -VerifyCommand { Test-Path "C:\Program Files\Adobe\Acrobat DC\Acrobat\Acrobat.exe" }
+
+        # vscode
+        InstallPackage -PackageId 'Microsoft.VisualStudioCode' `
+                       -VerifyCommand { Test-Path "C:\Users\$env:USERNAME\AppData\Local\Programs\Microsoft VS Code\Code.exe" }
+
+        # cursor
+        InstallPackage -PackageId 'Anysphere.Cursor' `
+                       -VerifyCommand { Test-Path "C:\Users\$env:USERNAME\AppData\Local\Programs\Cursor\Cursor.exe" }
+
+        # reinstall Git with options /o:PathOption=CmdTools
+        UninstallPackage -PackageId 'Git.Git'
+        InstallPackage -PackageId 'Git.Git' -CustomOptions "'/o:PathOption=CmdTools'" `
+                       -VerifyCommand { & "C:\Program Files\Git\cmd\git.exe" --version }
+
+        # Git LFS
+        InstallPackage -PackageId 'GitHub.GitLFS' `
+                       -VerifyCommand { & "C:\Program Files\Git\cmd\git.exe" lfs version }
+
+        # P4V (Perforce Visual Client)
+        InstallPackage -PackageId 'Perforce.P4V' `
+                       -VerifyCommand { Test-Path "C:\Program Files\Perforce\p4v.exe" }
+
+        <# 
+        install copilot cli pre-requirements:
+            1. Node.js version 22 or later
+            2. npm version 10 or later
+        #>
+        InstallPackage -PackageId 'OpenJS.NodeJS'  `
+                       -VerifyCommand { & "C:\Program Files\nodejs\node.exe" -v }
+        & "C:\Program Files\nodejs\npm.cmd" install -g @github/copilot
+
+        
+        # Docker Desktop
+        InstallPackage -PackageId 'Docker.DockerDesktop' `
+                       -VerifyCommand { Test-Path "C:\Program Files\Docker\Docker\Docker Desktop.exe" }
+       
+        # visual studio 2022
+        # components required by shisa development
+        $vsOverrideOptions = "--add Microsoft.VisualStudio.Workload.NativeDesktop " + `
+                             "--add Microsoft.VisualStudio.Workload.ManagedDesktop " + `
+                             "--add Microsoft.VisualStudio.Workload.VisualStudioExtension " + `
+                             "--add Microsoft.VisualStudio.Component.Windows11SDK.26100 " + `
+                             "--add Microsoft.VisualStudio.ComponentGroup.VC.Tools.142.x86.x64 " + `
+                             "--add Microsoft.VisualStudio.Component.VC.14.29.16.11.x86.x64.Spectre " + `
+                             "--add Microsoft.Net.Component.4.8.TargetingPack " + `
+                             "--add Microsoft.VisualStudio.Component.TextTemplating " + `
+                             "--add Microsoft.VisualStudio.Component.DslTools " + `
+                             "--includeRecommended"
+
+        InstallPackage -PackageId 'Microsoft.VisualStudio.2022.Community' `
+                       -OverrideOptions $vsOverrideOptions
+
+        Write-Host "Development tools installation completed!" -ForegroundColor Green
+    }
+    catch {
+        Write-Error "Error during development tools installation: $($_.Exception.Message)"
+        Write-Host "Installation failed at: $($_.InvocationInfo.ScriptLineNumber)" -ForegroundColor Red
+        throw
+    }
+}
+
+function Uninstall-DevelopmentTools {
+    UninstallPackage -PackageId 'SSHFS-Win.SSHFS-Win'
+
+    UninstallPackage -PackageId 'Google.Chrome'
+
+    UninstallPackage -PackageId 'Adobe.Acrobat.Reader.64-bit'
+
+    UninstallPackage -PackageId 'Microsoft.VisualStudioCode'
+
+    UninstallPackage -PackageId 'Anysphere.Cursor'
+
+    UninstallPackage -PackageId 'GitHub.GitLFS'
+
+    UninstallPackage -PackageId 'Git.Git'
+
+    UninstallPackage -PackageId 'OpenJS.NodeJS'
+
+    UninstallPackage -PackageId 'Docker.DockerDesktop'
+
+    winget uninstall --id 'Microsoft.VisualStudio.2022.Community' --all-versions --accept-source-agreements
+}
+
+<#
+visual studio 2022
+SHISA need below visual studio components. To look up the id from component name refer to the links for the latest ids:
+    https://learn.microsoft.com/en-us/visualstudio/install/workload-and-component-ids?view=vs-2022
+    https://learn.microsoft.com/en-us/visualstudio/install/workload-component-id-vs-community?view=vs-2022&preserve-view=true
+
+Below are current name to id maps, and component ID might evolve, so always refer to the links for the latest info:
+name                                                                        id
+Desktop development with C++                                                Microsoft.VisualStudio.Workload.NativeDesktop
+.NET desktop development                                                    Microsoft.VisualStudio.Workload.ManagedDesktop
+Visual Studio extension development                                         Microsoft.VisualStudio.Workload.VisualStudioExtension
+Windows 11 SDK (10.0.26100.3916)                                            Microsoft.VisualStudio.Component.Windows11SDK.26100
+MSVC v142 - VS 2019 C++ x64/x86 build tools (v14.29)                        Microsoft.VisualStudio.ComponentGroup.VC.Tools.142.x86.x64
+MSVC v142 - VS 2019 C++ x64/x86 Spectre-mitigated libs (v14.29-16.11)       Microsoft.VisualStudio.Component.VC.14.29.16.11.x86.x64.Spectre
+.NET Framework 4.8 targeting pack                                           Microsoft.Net.Component.4.8.TargetingPack
+Text Template Transformation                                                Microsoft.VisualStudio.Component.TextTemplating
+Modeling SDK                                                                Microsoft.VisualStudio.Component.DslTools
+#>

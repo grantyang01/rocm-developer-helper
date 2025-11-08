@@ -47,21 +47,35 @@ function Read-Yaml {
     }
 }
 
-# Enables a Windows feature (unconditionally attempts to enable)
+# Enables a Windows feature (only if not already enabled)
 function Enable-Feature {
     param (
         [Parameter(Mandatory = $true)]
-        [string]$FeatureName
+        [string]$FeatureName,
+        [Parameter(Mandatory = $true)]
+        [ref]$WasInstalled
     )
+    
+    # Initialize WasInstalled to false
+    $WasInstalled.Value = $false
     if (-not (IsAdmin)) {
         Write-Error "Enable-Feature requires elevation. Please run PowerShell as Administrator."
         return $false
     }
     
-    Write-Host "Enabling $FeatureName feature..."
     try {
+        # Check if feature is already enabled
+        $featureState = Get-WindowsOptionalFeature -Online -FeatureName $FeatureName -ErrorAction Stop
+        
+        if ($featureState.State -eq "Enabled") {
+            Write-Host "$FeatureName feature is already enabled." -ForegroundColor Yellow
+            return $true
+        }
+        
+        Write-Host "Enabling $FeatureName feature..." -ForegroundColor Green
         Enable-WindowsOptionalFeature -Online -FeatureName $FeatureName -NoRestart -ErrorAction Stop
-        Write-Host "$FeatureName feature enabled successfully."
+        Write-Host "$FeatureName feature enabled successfully." -ForegroundColor Green
+        $WasInstalled.Value = $true
         return $true
     }
     catch {
@@ -90,21 +104,6 @@ function CheckProperty {
     else {
         Write-Output "$PropertyName is not found or unavailable."
     }
-}
-
-# Example usage:
-# CheckProperty -PropertyName "HyperVRequirementVirtualizationFirmwareEnabled"
-
-function IsAdmin {
-    $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
-    $principal = New-Object Security.Principal.WindowsPrincipal($identity)
-    $isAdmin = $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-    if ($isAdmin) {
-        Write-Output "This terminal is running as administrator."
-    } else {
-        Write-Output "This terminal is NOT running as administrator."
-    }
-    return $isAdmin
 }
 
 function Get-EnvVar {
@@ -275,87 +274,52 @@ function UninstallPackage {
     }
 }
 
-# latest power shell, and powershell-yaml
-# InstallPackage -PackageId 'Microsoft.PowerShell'
-# Install-Module powershell-yaml -Force -Confirm:$false
+function Update-AllPackages {
+    param (
+        [switch]$CheckOnly,
+        [switch]$Silent = $true
+    )
+    
+    try {
+        if ($CheckOnly) {
+            Write-Output "Checking for available package updates..."
+            winget upgrade --accept-source-agreements
+        } else {
+            Write-Output "Updating all installed packages..."
+            if ($Silent) {
+                winget upgrade --all --accept-source-agreements --accept-package-agreements --silent
+            } else {
+                winget upgrade --all --accept-source-agreements --accept-package-agreements
+            }
+            Write-Output "All packages updated successfully."
+        }
+        return $true
+    }
+    catch {
+        Write-Error "Failed to update packages: $($_.Exception.Message)"
+        return $false
+    }
+}
 
-# UninstallPackage -PackageId 'Microsoft.PowerShell'
-# winget search Microsoft.PowerShell
-
-# vscode
-# InstallPackage -PackageId 'Microsoft.VisualStudioCode'
-
-# cursor
-
-# InstallPackage -PackageId 'Anysphere.Cursor'
-
-# Install Git
-# InstallPackage -PackageId 'Git.Git' -CustomOptions "'/o:PathOption=CmdTools'" -VerifyCommand { git --version }
-# UninstallPackage -PackageId 'Git.Git'
-
-# Install Git LFS
-# InstallPackage -PackageId 'GitHub.GitLFS' -VerifyCommand { git lfs version }
-# UninstallPackage -PackageId 'GitHub.GitLFS'
-
-# pdf
-# InstallPackage -PackageId SumatraPDF.SumatraPDF
-# UninstallPackage -PackageId 'SumatraPDF.SumatraPDF'
-
-<# 
-install copilot cli
-pre-requirements:
-    1. Node.js version 22 or later
-    2. npm version 10 or later
-#>
-# InstallPackage -PackageId 'OpenJS.NodeJS' -VerifyCommand { node -v }
-# UninstallPackage -PackageId 'OpenJS.NodeJS'
-# npm install -g @github/copilot
-
-# visual studio 2022
-<#
-component name to id:
-https://learn.microsoft.com/en-us/visualstudio/install/workload-and-component-ids?view=vs-2022
-https://learn.microsoft.com/en-us/visualstudio/install/workload-component-id-vs-community?view=vs-2022&preserve-view=true
-
-components required by shisa development:
-name                                                                        id
-Desktop development with C++                                                Microsoft.VisualStudio.Workload.NativeDesktop
-.NET desktop development                                                    Microsoft.VisualStudio.Workload.ManagedDesktop
-Visual Studio extension development                                         Microsoft.VisualStudio.Workload.VisualStudioExtension
-Windows 11 SDK (10.0.26100.3916)                                            Microsoft.VisualStudio.Component.Windows11SDK.26100
-MSVC v142 - VS 2019 C++ x64/x86 build tools (v14.29)                        Microsoft.VisualStudio.ComponentGroup.VC.Tools.142.x86.x64
-MSVC v142 - VS 2019 C++ x64/x86 Spectre-mitigated libs (v14.29-16.11)       Microsoft.VisualStudio.Component.VC.14.29.16.11.x86.x64.Spectre
-.NET Framework 4.8 targeting pack                                           Microsoft.Net.Component.4.8.TargetingPack
-Text Template Transformation                                                Microsoft.VisualStudio.Component.TextTemplating
-Modeling SDK                                                                Microsoft.VisualStudio.Component.DslTools
-
-# winget
-$vsOverrideOptions = "--add Microsoft.VisualStudio.Workload.NativeDesktop " + `
-                     "--add Microsoft.VisualStudio.Workload.ManagedDesktop " + `
-                     "--add Microsoft.VisualStudio.Workload.VisualStudioExtension " + `
-                     "--add Microsoft.VisualStudio.Component.Windows11SDK.26100 " + `
-                     "--add Microsoft.VisualStudio.ComponentGroup.VC.Tools.142.x86.x64 " + `
-                     "--add Microsoft.VisualStudio.Component.VC.14.29.16.11.x86.x64.Spectre " + `
-                     "--add Microsoft.Net.Component.4.8.TargetingPack " + `
-                     "--add Microsoft.VisualStudio.Component.TextTemplating " + `
-                     "--add Microsoft.VisualStudio.Component.DslTools " + `
-                     "--includeRecommended"
-
-winget install --id Microsoft.VisualStudio.2022.Community -e --source winget -h --accept-source-agreements --accept-package-agreements --override "$vsOverrideOptions"
-
-InstallPackage -PackageId 'Microsoft.VisualStudio.2022.Community' -OverrideOptions $vsOverrideOptions -VerifyCommand { winget list | Select-String 'VisualStudio' }
-# use VisualStudioSetup.exe directly
-VisualStudioSetup.exe --add Microsoft.VisualStudio.Workload.NativeDesktop `
---add Microsoft.VisualStudio.Workload.ManagedDesktop `
---add Microsoft.VisualStudio.Workload.VisualStudioExtension `
---add Microsoft.VisualStudio.Component.Windows11SDK.26100 `
---add Microsoft.VisualStudio.ComponentGroup.VC.Tools.142.x86.x64 `
---add Microsoft.VisualStudio.Component.VC.14.29.16.11.x86.x64.Spectre `
---add Microsoft.Net.Component.4.8.TargetingPack `
---add Microsoft.VisualStudio.Component.TextTemplating `
---add Microsoft.VisualStudio.Component.DslTools `
---includeRecommended
-
-# uninstall
-UninstallPackage -PackageId 'Microsoft.VisualStudio.2022.Community'
-#>
+function Update-Package {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$PackageId,
+        [switch]$Silent = $true
+    )
+    
+    try {
+        Write-Output "Updating package '$PackageId'..."
+        if ($Silent) {
+            winget upgrade --id $PackageId --accept-source-agreements --accept-package-agreements --silent
+        } else {
+            winget upgrade --id $PackageId --accept-source-agreements --accept-package-agreements
+        }
+        Write-Output "Package '$PackageId' updated successfully."
+        return $true
+    }
+    catch {
+        Write-Error "Failed to update package '$PackageId': $($_.Exception.Message)"
+        return $false
+    }
+}

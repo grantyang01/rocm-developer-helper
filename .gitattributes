@@ -1,0 +1,59 @@
+# Default to LF for all text files
+* text eol=lf
+
+# Windows-specific files that NEED CRLF
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Shell scripts and Unix files (explicit LF)
+*.sh text eol=lf
+*.bash text eol=lf
+activate text eol=lf
+
+# Configuration and documentation files (LF)
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+*.xml text eol=lf
+*.txt text eol=lf
+
+# Source code files (LF)
+*.c text eol=lf
+*.cpp text eol=lf
+*.h text eol=lf
+*.hpp text eol=lf
+*.py text eol=lf
+*.js text eol=lf
+*.ts text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+
+# Makefiles and build scripts (LF)
+Makefile text eol=lf
+makefile text eol=lf
+*.mk text eol=lf
+*.cmake text eol=lf
+CMakeLists.txt text eol=lf
+
+# Docker files (LF)
+Dockerfile text eol=lf
+*.dockerfile text eol=lf
+
+# Binary files (no conversion)
+*.exe binary
+*.dll binary
+*.so binary
+*.a binary
+*.lib binary
+*.zip binary
+*.tar.gz binary
+*.tgz binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.bmp binary
+*.ico binary
+*.pdf binary

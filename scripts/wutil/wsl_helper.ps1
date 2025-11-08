@@ -16,9 +16,25 @@ function Install-Evince {
 }
 
 function Install-WslFeatures {
+    param (
+        [Parameter(Mandatory = $true)]
+        [ref]$RestartRequired
+    )
+    
+    Write-Host "Enabling WSL features..." -ForegroundColor Green
+    $RestartRequired.Value = $false
+    
     try {
+        # Track if any features were actually installed (requiring restart)
+        $wslInstalled = $false
+        $vmInstalled = $false
+        
         # Ensure WSL feature is enabled
-        Enable-Feature -FeatureName "Microsoft-Windows-Subsystem-Linux"
+        $wslSuccess = Enable-Feature -FeatureName "Microsoft-Windows-Subsystem-Linux" -WasInstalled ([ref]$wslInstalled)
+        if (-not $wslSuccess) {
+            Write-Error "Failed to enable WSL feature"
+            return $false
+        }
     } catch {
         Write-Error "Failed to enable WSL feature: $($_.Exception.Message)"
         return $false
@@ -26,14 +42,26 @@ function Install-WslFeatures {
 
     try {
         # Ensure Virtual Machine Platform feature is enabled
-        Enable-Feature -FeatureName "VirtualMachinePlatform"
+        $vmSuccess = Enable-Feature -FeatureName "VirtualMachinePlatform" -WasInstalled ([ref]$vmInstalled)
+        if (-not $vmSuccess) {
+            Write-Error "Failed to enable Virtual Machine Platform"
+            return $false
+        }
     } catch {
         Write-Error "Failed to enable Virtual Machine Platform: $($_.Exception.Message)"
         return $false
     }
     
     Write-Host "WSL features enabled successfully." -ForegroundColor Green
-    Write-Host "IMPORTANT: A system restart is required to complete WSL setup." -ForegroundColor Yellow
+    
+    # Set RestartRequired if any features were actually installed
+    if ($wslInstalled -or $vmInstalled) {
+        $RestartRequired.Value = $true
+        Write-Host "IMPORTANT: WSL features were installed. A system restart is required to complete setup." -ForegroundColor Yellow
+    } else {
+        Write-Host "All WSL features were already enabled - no restart required." -ForegroundColor Green
+    }
+    
     return $true
 }
 

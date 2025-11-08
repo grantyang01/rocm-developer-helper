@@ -4,6 +4,13 @@
     Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope LocalMachine
     Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 
+    # After running this script:
+    # To enable the new PowerShell
+    #   1. reopen windows Terminal
+    #   2. In windows Terminal settings(ctrl+,)->Strartup->Default profile: [Dropdown ▼]:
+    #       choose "PowerShell" instead of "Windows PowerShell"
+    #   3. reopen Windows Terminal.
+
     # Usage examples:
     # .\bootstrap.ps1  # Uses default path c:\work
     # .\bootstrap.ps1 -WorkPath "D:\dev"
@@ -34,6 +41,13 @@ function Initialize-Bootstrap {
             git clone git@me.github.com:grantyang01/rocm-developer-helper.git rdh
         }
         
+        # install PowerShell and powershell-yaml module
+        Write-Host "Installing latest PowerShell..." -ForegroundColor Yellow
+        winget install Microsoft.PowerShell
+        
+        Write-Host "Installing powershell-yaml module..." -ForegroundColor Yellow
+        Install-Module powershell-yaml -Force -Confirm:$false
+
         Write-Host "Bootstrap completed successfully!" -ForegroundColor Green
         return $true
     }
