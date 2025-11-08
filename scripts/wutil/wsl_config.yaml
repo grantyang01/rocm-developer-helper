@@ -1,4 +1,0 @@
-wsl:
-  distro_name: "Ubuntu-24.04"
-  user_name: "gryang"
-  git_email: "grant.yang@amd.com"

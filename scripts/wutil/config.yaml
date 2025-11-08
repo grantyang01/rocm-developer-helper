@@ -1,0 +1,20 @@
+# Windows Setup Configuration
+# Set to 1 to enable, 0 to disable
+
+virtualization:
+  enable: 1
+
+chocolatey:
+  enable: 1
+
+ssh:
+  enable: 1
+
+devtools:
+  enable: 1
+
+wsl:
+  enable: 1
+  distro_name: "Ubuntu-24.04"
+  user_name: "gryang"
+  git_email: "grant.yang@amd.com"

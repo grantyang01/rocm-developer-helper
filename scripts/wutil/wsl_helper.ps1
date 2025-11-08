@@ -67,7 +67,7 @@ function Install-WslFeatures {
 
 function Install-Wsl {
     param (
-        [string]$ConfigPath = "$PSScriptRoot\wsl_config.yaml"
+        [string]$ConfigPath = "$PSScriptRoot\config.yaml"
     )
     
     # Read configuration from YAML file
@@ -175,5 +175,5 @@ function Install-Wsl {
 # pre-requirement: run as administrator
 # Install-WslFeatures
 
-# Install-Wsl                                    # Uses wsl_config.yaml
+# Install-Wsl                                    # Uses config.yaml
 # Install-Wsl -ConfigPath "custom_config.yaml"  # Use different config file
