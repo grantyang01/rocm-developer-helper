@@ -18,3 +18,9 @@ wsl:
   distro_name: "Ubuntu-24.04"
   user_name: "gryang"
   git_email: "grant.yang@amd.com"
+
+hipsdk:
+  enable: 1
+  rocm_branch: "release_rocm-rel-6.4"
+  rocm_build: "76"
+  rocm_path: "C:\\opt\\rocm"

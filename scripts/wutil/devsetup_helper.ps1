@@ -1,39 +1,45 @@
 . "$PSScriptRoot\tools.ps1"
 
 function Install-DevelopmentTools {
-    Write-Host "Installing development tools..." -ForegroundColor Green
-    
     try {
         # sshfs-win
+        Write-Host "Installing sshfs-win..." -ForegroundColor Cyan
         InstallPackage -PackageId 'SSHFS-Win.SSHFS-Win' `
                        -VerifyCommand { Test-Path "C:\Program Files\SSHFS-Win\bin\sshfs.exe" }
 
         # chrome
+        Write-Host "Installing Chrome..." -ForegroundColor Cyan
         InstallPackage -PackageId 'Google.Chrome' `
                        -VerifyCommand { Test-Path "C:\Program Files\Google\Chrome\Application\chrome.exe" }
 
         # pdf reader
+        Write-Host "Installing Adobe Reader..." -ForegroundColor Cyan
         InstallPackage -PackageId 'Adobe.Acrobat.Reader.64-bit' `
                -VerifyCommand { Test-Path "C:\Program Files\Adobe\Acrobat DC\Acrobat\Acrobat.exe" }
 
         # vscode
+        Write-Host "Installing VisualStudio Code..." -ForegroundColor Cyan
         InstallPackage -PackageId 'Microsoft.VisualStudioCode' `
                        -VerifyCommand { Test-Path "C:\Users\$env:USERNAME\AppData\Local\Programs\Microsoft VS Code\Code.exe" }
 
         # cursor
+        Write-Host "Installing Cursor..." -ForegroundColor Cyan
         InstallPackage -PackageId 'Anysphere.Cursor' `
                        -VerifyCommand { Test-Path "C:\Users\$env:USERNAME\AppData\Local\Programs\Cursor\Cursor.exe" }
 
         # reinstall Git with options /o:PathOption=CmdTools
+        Write-Host "Installing git..." -ForegroundColor Cyan
         UninstallPackage -PackageId 'Git.Git'
         InstallPackage -PackageId 'Git.Git' -CustomOptions "'/o:PathOption=CmdTools'" `
                        -VerifyCommand { & "C:\Program Files\Git\cmd\git.exe" --version }
 
         # Git LFS
+        Write-Host "Installing git lfs..." -ForegroundColor Cyan
         InstallPackage -PackageId 'GitHub.GitLFS' `
                        -VerifyCommand { & "C:\Program Files\Git\cmd\git.exe" lfs version }
 
         # P4V (Perforce Visual Client)
+         Write-Host "Installing p4v..." -ForegroundColor Cyan
         InstallPackage -PackageId 'Perforce.P4V' `
                        -VerifyCommand { Test-Path "C:\Program Files\Perforce\p4v.exe" }
 
@@ -42,16 +48,19 @@ function Install-DevelopmentTools {
             1. Node.js version 22 or later
             2. npm version 10 or later
         #>
+        Write-Host "Installing node js..." -ForegroundColor Cyan
         InstallPackage -PackageId 'OpenJS.NodeJS'  `
                        -VerifyCommand { & "C:\Program Files\nodejs\node.exe" -v }
         & "C:\Program Files\nodejs\npm.cmd" install -g @github/copilot
 
         
         # Docker Desktop
+        Write-Host "Installing docker desktop..." -ForegroundColor Cyan
         InstallPackage -PackageId 'Docker.DockerDesktop' `
                        -VerifyCommand { Test-Path "C:\Program Files\Docker\Docker\Docker Desktop.exe" }
        
         # visual studio 2022
+        Write-Host "Installing VisualStudio 2022 Community..." -ForegroundColor Cyan
         # components required by shisa development
         $vsOverrideOptions = "--add Microsoft.VisualStudio.Workload.NativeDesktop " + `
                              "--add Microsoft.VisualStudio.Workload.ManagedDesktop " + `

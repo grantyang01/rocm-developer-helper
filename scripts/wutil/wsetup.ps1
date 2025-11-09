@@ -1,16 +1,24 @@
 # Import existing helper modules
+. "$PSScriptRoot\tools.ps1"
 . "$PSScriptRoot\vm_helper.ps1"
 . "$PSScriptRoot\wsl_helper.ps1"
-. "$PSScriptRoot\choco_helper.ps1"
-. "$PSScriptRoot\hipsdk_helper.ps1"
 . "$PSScriptRoot\ssh_helper.ps1"
+. "$PSScriptRoot\choco_helper.ps1"
 . "$PSScriptRoot\devsetup_helper.ps1"
+. "$PSScriptRoot\hipsdk_helper.ps1"
 
 function Setup-Windows {
+
+    # Check if running as administrator
+    if (!(IsAdmin)) {
+        Write-Error "This script requires administrator privileges. Please run PowerShell as Administrator."
+        return $false
+    }
+
     # Read configuration
     $configPath = Join-Path $PSScriptRoot "config.yaml"
     $config = Read-Yaml -Path $configPath
-    if (-not $config) {
+    if (!$config) {
         Write-Error "Failed to read configuration from $configPath"
         return $false
     }
@@ -20,7 +28,7 @@ function Setup-Windows {
         Write-Host "Setting up virtualization features..." -ForegroundColor Cyan
         $vmRestartRequired = $false
         $success = Install-VirtualizationFeatures -RestartRequired ([ref]$vmRestartRequired)
-        if (-not $success) {
+        if (!$success) {
             Write-Error "Failed to setup virtualization features."
             return $false
         }
@@ -31,7 +39,7 @@ function Setup-Windows {
         Write-Host "Setting up WSL features..." -ForegroundColor Cyan
         $wslRestartRequired = $false
         $success = Install-WslFeatures -RestartRequired ([ref]$wslRestartRequired)
-        if (-not $success) {
+        if (!$success) {
             Write-Error "Failed to setup WSL features."
             return $false
         }
@@ -54,14 +62,55 @@ function Setup-Windows {
     if ($config.wsl.enable) {
         Write-Host "Installing WSL distribution..." -ForegroundColor Cyan
         $success = Install-Wsl
-        if (-not $success) {
+        if (!$success) {
             Write-Error "Failed to install WSL distribution."
             return $false
         }
     }
     
+    # Install SSH server if enabled
+    if ($config.ssh.enable) {
+        Write-Host "Installing SSH server..." -ForegroundColor Cyan
+        $success = Install-OpensshServer
+        if (!$success) {
+            Write-Error "Failed to install SSH server."
+            return $false
+        }
+    }
+    
+    # Install Chocolatey if enabled
+    if ($config.chocolatey.enable) {
+        Write-Host "Installing Chocolatey..." -ForegroundColor Cyan
+        $success = Install-Chocolatey
+        if (!$success) {
+            Write-Error "Failed to install Chocolatey."
+            return $false
+        }
+    }
+
+    # Install development tools if enabled
+    if ($config.devtools.enable) {
+        Write-Host "Installing development tools..." -ForegroundColor Cyan
+        $success = Install-DevelopmentTools
+        if (!$success) {
+            Write-Error "Failed to install Chocolatey."
+            return $false
+        }
+    }
+
+    # Install HIP SDK if enabled, shisa depencency
+    <#
+    if ($config.hipsdk.enable) {
+        Write-Host "Installing HIP SDK..." -ForegroundColor Cyan
+        $success = InstallHipSdk -rocmBranch $config.hipsdk.rocm_branch -rocmBuild $config.hipsdk.rocm_build -rocmPath $config.hipsdk.rocm_path
+        if (-not $success) {
+            Write-Error "Failed to install HIP SDK."
+            return $false
+        }
+    }
+    #>
     return $true
 }
 
-
+Setup-Windows | Out-Null
 

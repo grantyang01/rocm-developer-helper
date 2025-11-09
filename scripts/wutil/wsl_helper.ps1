@@ -111,6 +111,13 @@ function Install-Wsl {
     }
 
     try {
+        # Check if distro is already installed
+        $installedDistros = wsl --list --quiet
+        if ($installedDistros -contains $DistroName) {
+            Write-Host "$DistroName is already installed." -ForegroundColor Yellow
+            return $true
+        }
+        
         # Install specified distro
         Write-Host "Installing $DistroName..."
         wsl --install -d $DistroName --no-launch

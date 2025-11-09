@@ -2,13 +2,15 @@
 function Install-Chocolatey {
     
     try {
-        Write-Host "Installing Chocolatey..." -ForegroundColor Green
+        Write-Host "Checking Chocolatey installation..." -ForegroundColor Green
 
         # Check if Chocolatey is already installed
         if (Get-Command choco -ErrorAction SilentlyContinue) {
             Write-Host "Chocolatey is already installed!" -ForegroundColor Yellow
-            return
+            return $true
         }
+
+        Write-Host "Installing Chocolatey..." -ForegroundColor Green
 
         # Set execution policy for this process
         Write-Host "Setting execution policy..." -ForegroundColor Yellow
@@ -24,11 +26,11 @@ function Install-Chocolatey {
         Invoke-Expression $installScript
 
         Write-Host "Chocolatey installation completed!" -ForegroundColor Green
-        Write-Host "You may need to restart your shell or run 'refreshenv' to use choco commands." -ForegroundColor Cyan
+        return $true
     }
     catch {
         Write-Error "Failed to install Chocolatey: $($_.Exception.Message)"
-        throw
+        return $false
     }
 }
 
