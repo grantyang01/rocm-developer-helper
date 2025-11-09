@@ -1,5 +1,4 @@
 # Import existing helper modules
-. "$PSScriptRoot\tools.ps1"
 . "$PSScriptRoot\vm_helper.ps1"
 . "$PSScriptRoot\wsl_helper.ps1"
 . "$PSScriptRoot\ssh_helper.ps1"
@@ -98,17 +97,16 @@ function Setup-Windows {
         }
     }
 
-    # Install HIP SDK if enabled, shisa depencency
-    <#
+    # Install HIP SDK if enabled, shisa dependency
     if ($config.hipsdk.enable) {
         Write-Host "Installing HIP SDK..." -ForegroundColor Cyan
-        $success = InstallHipSdk -rocmBranch $config.hipsdk.rocm_branch -rocmBuild $config.hipsdk.rocm_build -rocmPath $config.hipsdk.rocm_path
+        $success = InstallHipSdk
         if (-not $success) {
             Write-Error "Failed to install HIP SDK."
             return $false
         }
     }
-    #>
+    
     return $true
 }
 

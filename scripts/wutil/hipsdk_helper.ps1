@@ -1,64 +1,86 @@
 . "$PSScriptRoot\tools.ps1"
 
 function InstallHipSdk {
-    param (
-        [string]$rocmBranch = "release_rocm-rel-6.4",
-        [string]$rocmBuild = "76",
-        [string]$rocmPath = "C:\opt\rocm"
-    )
-
-    # Construct release relative path and download URL
-    $rocmRel = "$rocmBranch\$rocmBuild"
-    $rocmUrl = "https://mkmartifactory.amd.com:8443/artifactory/sw-hip-rel-local/hip-sdk/$($rocmBranch)/$($rocmBuild)/hipSDK.zip"
-
-    # Create ROCm base path if missing
-    if (-not (Test-Path $rocmPath)) {
-        mkdir $rocmPath | Out-Null
+    $config = Read-Yaml -Path $ConfigPath
+    if (-not $config) {
+        Write-Error "Failed to load HIP SDK configuration from: $ConfigPath"
+        return $false
     }
-
-    # Create destination directory for versioned release
-    $versionedPath = Join-Path $rocmPath $rocmRel
-    if (-not (Test-Path $versionedPath)) {
-        mkdir $versionedPath | Out-Null
+    
+    # Get values from config
+    $rocmBranch = $config.hipsdk.rocm_branch
+    $rocmBuild = $config.hipsdk.rocm_build
+    $rocmPath = $config.hipsdk.rocm_path
+    
+    if (-not $rocmBranch -or -not $rocmBuild -or -not $rocmPath) {
+        Write-Error "Configuration file must contain hipsdk.rocm_branch, hipsdk.rocm_build, and hipsdk.rocm_path"
+        return $false
     }
+    
+    Write-Host "HIP SDK Configuration:"
+    Write-Host "  Branch: $rocmBranch"
+    Write-Host "  Build: $rocmBuild"
+    Write-Host "  Path: $rocmPath"
+    
+    try {
+        # Construct release relative path and download URL
+        $rocmRel = "$rocmBranch\$rocmBuild"
+        $rocmUrl = "https://mkmartifactory.amd.com:8443/artifactory/sw-hip-rel-local/hip-sdk/$($rocmBranch)/$($rocmBuild)/hipSDK.zip"
 
-    $rocmZipFile = Join-Path $versionedPath "hipSDK.zip"
+        # Create ROCm base path if missing
+        if (-not (Test-Path $rocmPath)) {
+            mkdir $rocmPath | Out-Null
+        }
 
-    # Download hipSDK.zip
-    Write-Host "Downloading HIP SDK from $rocmUrl to $rocmZipFile"
-    curl.exe -o $rocmZipFile $rocmUrl
+        # Create destination directory for versioned release
+        $versionedPath = Join-Path $rocmPath $rocmRel
+        if (-not (Test-Path $versionedPath)) {
+            mkdir $versionedPath | Out-Null
+        }
 
-    # Prepare extraction folder inside TEMP
-    $tempExtractPath = Join-Path $env:TEMP "hipSDK_extract"
+        $rocmZipFile = Join-Path $versionedPath "hipSDK.zip"
 
-    Add-Type -AssemblyName System.IO.Compression.FileSystem
-    Write-Host "Extracting zip to $tempExtractPath"
-    [System.IO.Compression.ZipFile]::ExtractToDirectory($rocmZipFile, $tempExtractPath)
+        # Download hipSDK.zip
+        Write-Host "Downloading HIP SDK from $rocmUrl to $rocmZipFile"
+        curl.exe -o $rocmZipFile $rocmUrl
 
-    # Clear existing ROCm install contents
-    Write-Host "Cleaning existing ROCm installation under $rocmPath"
-    Remove-Item -Path (Join-Path $rocmPath '*') -Recurse -Force
+        # Prepare extraction folder inside TEMP
+        $tempExtractPath = Join-Path $env:TEMP "hipSDK_extract"
 
-    # Copy SDKCore and RTCRuntime Bin contents
-    Write-Host "Copying SDKCore binaries"
-    Copy-Item -Path (Join-Path $tempExtractPath "ROCmSDKPackages\SDKCore\Bin\*") -Destination $rocmPath -Recurse -Force
-    Write-Host "Copying RTCRuntime binaries"
-    Copy-Item -Path (Join-Path $tempExtractPath "ROCmSDKPackages\RTCRuntime\Bin\*") -Destination $rocmPath -Recurse -Force
+        Add-Type -AssemblyName System.IO.Compression.FileSystem
+        Write-Host "Extracting zip to $tempExtractPath"
+        [System.IO.Compression.ZipFile]::ExtractToDirectory($rocmZipFile, $tempExtractPath)
 
-    # Clean up temporary extraction folder
-    Write-Host "Cleaning up temporary extraction folder"
-    Remove-Item -Path $tempExtractPath -Recurse -Force
+        # Clear existing ROCm install contents
+        Write-Host "Cleaning existing ROCm installation under $rocmPath"
+        Remove-Item -Path (Join-Path $rocmPath '*') -Recurse -Force
 
-    # Set environment variables persistently using PowerShell
-    Write-Host "Setting HIP_PATH and updating system PATH environment variables"
-    [System.Environment]::SetEnvironmentVariable('HIP_PATH', $rocmPath, 'Machine')
-    $oldPath = [System.Environment]::GetEnvironmentVariable('Path', 'Machine')
-    if ($oldPath -notlike "*$($rocmPath)\bin*") {
-        $newPath = $oldPath.TrimEnd(';') + ";$($rocmPath)\bin"
-        [System.Environment]::SetEnvironmentVariable('Path', $newPath, 'Machine')
+        # Copy SDKCore and RTCRuntime Bin contents
+        Write-Host "Copying SDKCore binaries"
+        Copy-Item -Path (Join-Path $tempExtractPath "ROCmSDKPackages\SDKCore\Bin\*") -Destination $rocmPath -Recurse -Force
+        Write-Host "Copying RTCRuntime binaries"
+        Copy-Item -Path (Join-Path $tempExtractPath "ROCmSDKPackages\RTCRuntime\Bin\*") -Destination $rocmPath -Recurse -Force
+
+        # Clean up temporary extraction folder
+        Write-Host "Cleaning up temporary extraction folder"
+        Remove-Item -Path $tempExtractPath -Recurse -Force
+
+        # Set environment variables persistently using PowerShell
+        Write-Host "Setting HIP_PATH and updating system PATH environment variables"
+        [System.Environment]::SetEnvironmentVariable('HIP_PATH', $rocmPath, 'Machine')
+        $oldPath = [System.Environment]::GetEnvironmentVariable('Path', 'Machine')
+        if ($oldPath -notlike "*$($rocmPath)\bin*") {
+            $newPath = $oldPath.TrimEnd(';') + ";$($rocmPath)\bin"
+            [System.Environment]::SetEnvironmentVariable('Path', $newPath, 'Machine')
+        }
+
+        Write-Host "HIP SDK installation complete. Please restart your shell or system to apply environment variable changes."
+        return $true
     }
-
-    Write-Host "HIP SDK installation complete. Please restart your shell or system to apply environment variable changes."
+    catch {
+        Write-Error "Failed to install HIP SDK: $($_.Exception.Message)"
+        return $false
+    }
 }
 
 # setup hip sdk

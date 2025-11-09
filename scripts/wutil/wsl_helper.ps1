@@ -79,11 +79,11 @@ function Install-Wsl {
     
     # Get values from config file (required)
     $DistroName = $config.wsl.distro_name
-    $UserName = $config.wsl.user_name
-    $GitEmail = $config.wsl.git_email
+    $UserName = $config.devtools.git.user_name
+    $GitEmail = $config.devtools.git.git_email
     
     if (-not $DistroName -or -not $UserName -or -not $GitEmail) {
-        Write-Error "Configuration file must contain wsl.distro_name, wsl.user_name, and wsl.git_email"
+        Write-Error "Configuration file must contain wsl.distro_name, devtools.git.user_name, and devtools.git.git_email"
         return $false
     }
     

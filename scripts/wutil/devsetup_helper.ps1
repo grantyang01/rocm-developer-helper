@@ -1,4 +1,5 @@
 . "$PSScriptRoot\tools.ps1"
+. "$PSScriptRoot\git_helper.ps1"
 
 function Install-DevelopmentTools {
     try {
@@ -32,6 +33,9 @@ function Install-DevelopmentTools {
         UninstallPackage -PackageId 'Git.Git'
         InstallPackage -PackageId 'Git.Git' -CustomOptions "'/o:PathOption=CmdTools'" `
                        -VerifyCommand { & "C:\Program Files\Git\cmd\git.exe" --version }
+
+        $env:Path = "C:\Program Files\Git\cmd;$env:Path"
+        Configure-Git
 
         # Git LFS
         Write-Host "Installing git lfs..." -ForegroundColor Cyan
@@ -77,11 +81,12 @@ function Install-DevelopmentTools {
                        -OverrideOptions $vsOverrideOptions
 
         Write-Host "Development tools installation completed!" -ForegroundColor Green
+        return $true
     }
     catch {
         Write-Error "Error during development tools installation: $($_.Exception.Message)"
         Write-Host "Installation failed at: $($_.InvocationInfo.ScriptLineNumber)" -ForegroundColor Red
-        throw
+        return $false
     }
 }
 

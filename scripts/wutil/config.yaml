@@ -12,12 +12,13 @@ ssh:
 
 devtools:
   enable: 1
+  git:
+    user_name: "gryang"
+    git_email: "grant.yang@amd.com"
 
 wsl:
   enable: 1
   distro_name: "Ubuntu-24.04"
-  user_name: "gryang"
-  git_email: "grant.yang@amd.com"
 
 hipsdk:
   enable: 1
