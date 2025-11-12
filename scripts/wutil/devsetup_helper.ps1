@@ -3,6 +3,25 @@
 
 function Install-DevelopmentTools {
     try {
+        # Python - find and install latest version
+        Write-Host "Finding latest Python version..." -ForegroundColor Cyan
+        $latestPython = Get-LatestPackageVersion -PackageIdPattern "Python.Python"
+        if ($latestPython) {
+            Write-Host "Installing Python (latest: $latestPython)..." -ForegroundColor Cyan
+            InstallPackage -PackageId $latestPython `
+                           -VerifyCommand { Test-Path "C:\Users\$env:USERNAME\AppData\Local\Programs\Python\Python*\python.exe" }
+            
+            # Refresh PATH to make python and pip available immediately
+            $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + `
+                        [System.Environment]::GetEnvironmentVariable("Path", "User")
+            
+            # Install useful Python packages
+            pip install pypdf jinja2 ruamel.yaml --quiet
+            
+        } else {
+            Write-Error "Could not find Python package to install"
+        }
+
         # sshfs-win
         Write-Host "Installing sshfs-win..." -ForegroundColor Cyan
         InstallPackage -PackageId 'SSHFS-Win.SSHFS-Win' `
@@ -91,6 +110,16 @@ function Install-DevelopmentTools {
 }
 
 function Uninstall-DevelopmentTools {
+    # Uninstall Python - find any installed Python version
+    Write-Host "Finding installed Python version..." -ForegroundColor Cyan
+    $installedPython = Get-InstalledPackageVersion -PackageIdPattern 'Python\.Python(\.\d+)+'
+    if ($installedPython) {
+        Write-Host "Uninstalling $installedPython..." -ForegroundColor Cyan
+        UninstallPackage -PackageId $installedPython
+    } else {
+        Write-Host "No Python installation found." -ForegroundColor Yellow
+    }
+
     UninstallPackage -PackageId 'SSHFS-Win.SSHFS-Win'
 
     UninstallPackage -PackageId 'Google.Chrome'

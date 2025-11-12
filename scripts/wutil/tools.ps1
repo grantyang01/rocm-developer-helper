@@ -1,4 +1,4 @@
-function IsAdmin {
+function Test-Administrator {
     $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
     $principal = New-Object Security.Principal.WindowsPrincipal($identity)
     $isAdmin = $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
@@ -58,7 +58,7 @@ function Enable-Feature {
     
     # Initialize WasInstalled to false
     $WasInstalled.Value = $false
-    if (-not (IsAdmin)) {
+    if (-not (Test-Administrator)) {
         Write-Error "Enable-Feature requires elevation. Please run PowerShell as Administrator."
         return $false
     }
@@ -213,6 +213,98 @@ function IsPackageAvailable {
     catch {
         Write-Warning "Error checking package availability for '$PackageId': $($_.Exception.Message)"
         return $false
+    }
+}
+
+function Get-LatestPackageVersion {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$PackageIdPattern,
+        
+        [Parameter(Mandatory = $false)]
+        [string]$VersionRegex = ""
+    )
+    
+    try {
+        Write-Verbose "Searching for packages matching pattern: $PackageIdPattern"
+        $searchOutput = winget search --id $PackageIdPattern --accept-source-agreements 2>&1
+        
+        if (-not $searchOutput) {
+            Write-Error "No packages found matching pattern: $PackageIdPattern"
+            return $null
+        }
+        
+        # If no custom regex provided, create default pattern to match version segments
+        if ([string]::IsNullOrEmpty($VersionRegex)) {
+            $VersionRegex = [regex]::Escape($PackageIdPattern) + '(\.\d+)+'
+        }
+        
+        # Extract all matching package IDs
+        $packageVersions = $searchOutput | Select-String -Pattern $VersionRegex -AllMatches | 
+                          ForEach-Object { $_.Matches.Value } | Sort-Object -Unique
+        
+        if (-not $packageVersions) {
+            Write-Error "No package versions found matching regex: $VersionRegex"
+            return $null
+        }
+        
+        # Parse version segments and find the highest
+        # Supports multi-segment versions like X.Y.Z (e.g., 3.14.0, 4.0.1)
+        $latestPackage = $packageVersions | ForEach-Object {
+            $packageId = $_
+            # Extract all numeric segments after the base pattern
+            $versionPart = $_ -replace "^$([regex]::Escape($PackageIdPattern))\.", ""
+            $versionSegments = $versionPart -split '\.' | ForEach-Object { 
+                if ($_ -match '^\d+$') { [int]$_ } else { 0 }
+            }
+            
+            [PSCustomObject]@{
+                PackageId = $packageId
+                Major = if ($versionSegments.Count -gt 0) { $versionSegments[0] } else { 0 }
+                Minor = if ($versionSegments.Count -gt 1) { $versionSegments[1] } else { 0 }
+                Patch = if ($versionSegments.Count -gt 2) { $versionSegments[2] } else { 0 }
+                Build = if ($versionSegments.Count -gt 3) { $versionSegments[3] } else { 0 }
+            }
+        } | Sort-Object Major, Minor, Patch, Build -Descending | Select-Object -First 1
+        
+        if ($latestPackage) {
+            Write-Verbose "Found latest package: $($latestPackage.PackageId) (Version: $($latestPackage.Major).$($latestPackage.Minor).$($latestPackage.Patch).$($latestPackage.Build))"
+            return $latestPackage.PackageId
+        } else {
+            Write-Error "Could not determine latest package version"
+            return $null
+        }
+    }
+    catch {
+        Write-Error "Error finding latest package version: $($_.Exception.Message)"
+        return $null
+    }
+}
+
+function Get-InstalledPackageVersion {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$PackageIdPattern
+    )
+    
+    try {
+        Write-Verbose "Searching for installed packages matching pattern: $PackageIdPattern"
+        $listOutput = winget list --accept-source-agreements 2>&1 | Select-String -Pattern $PackageIdPattern -AllMatches
+        
+        if ($listOutput) {
+            $installedPackage = $listOutput.Matches.Value | Select-Object -First 1
+            if ($installedPackage) {
+                Write-Verbose "Found installed package: $installedPackage"
+                return $installedPackage
+            }
+        }
+        
+        Write-Verbose "No installed package found matching pattern: $PackageIdPattern"
+        return $null
+    }
+    catch {
+        Write-Error "Error finding installed package: $($_.Exception.Message)"
+        return $null
     }
 }
 

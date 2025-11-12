@@ -5,11 +5,12 @@
 . "$PSScriptRoot\choco_helper.ps1"
 . "$PSScriptRoot\devsetup_helper.ps1"
 . "$PSScriptRoot\hipsdk_helper.ps1"
+. "$PSScriptRoot\shisa_helper.ps1"
 
 function Setup-Windows {
 
     # Check if running as administrator
-    if (!(IsAdmin)) {
+    if (!(Test-Administrator)) {
         Write-Error "This script requires administrator privileges. Please run PowerShell as Administrator."
         return $false
     }
@@ -107,6 +108,32 @@ function Setup-Windows {
         }
     }
     
+    # Install SHISA tools if enabled
+    if ($config.shisa.enable) {
+        Write-Host "Installing SHISA tools..." -ForegroundColor Cyan
+        $success = Install-ShisaTools
+        if (!$success) {
+            Write-Error "Failed to install SHISA tools."
+            return $false
+        }
+
+        # Set SHISA environment variables
+        Write-Host "Setting SHISA environment variables..." -ForegroundColor Cyan
+        $success = Set-ShisaEnvVars
+        if (!$success) {
+            Write-Error "Failed to set SHISA environment variables."
+            return $false
+        }
+
+        <#
+        # Run SHISA setup script
+        Write-Host "Running SHISA setup script..." -ForegroundColor Cyan
+        if (!(Invoke-ShisaSetup)) {
+            Write-Error "SHISA setup failed."
+            return $false
+        }
+        #>
+    }
     return $true
 }
 

@@ -25,3 +25,58 @@ hipsdk:
   rocm_branch: "release_rocm-rel-6.4"
   rocm_build: "76"
   rocm_path: "C:\\opt\\rocm"
+
+gpu_interface:
+  enable: 1
+  gh_user: ""  # GitHub username for AMD internal repos
+  pat: ""      # Personal Access Token for GitHub
+  work_dir: "C:\\work\\rdh\\shisa"
+  rocm_version_gi: "6.4"
+  gi_branch: ""  # Leave empty for default branch
+
+SHISA:
+  enable: 1
+
+  # SHISA root dir
+  SHISA: 'c:\work\shisa'
+
+  # Subdirectories to add to PATH (relative to SHISA root)
+  path_dirs:
+    - 'bin'
+    - 'tools\scripts'
+    - 'testing'
+
+  # path to the clang.exe
+  SHISA_CLANG_BINARY: 'C:\Program Files\LLVM\bin\clang.exe'
+
+  # target ELF ABI (PAL on Windows, HSA on Linux)
+  SHISA_ELF_ABI: 'PAL'
+
+  # target ASIC for SP3 and other tools
+  SP3_ASIC: 'NAVI31'
+
+  # preprocessor command (should be full path to exe + parameters for capture tools to work)
+  SP3_PREPROCESSOR: 'C:\Strawberry\perl\bin\perl.exe %%SHISA%%\tools\scripts\preprocessor.pl'
+
+  # path to the sp3 binary
+  SP3_BINARY: '%%SHISA%%\bin\sp3.exe'
+
+  # paths to sp3 include directories, separated by semicolon
+  SP3_PREPROCESSOR_INCLUDE_DIRS: '%%SHISA%%\shader_dev_SSP\include;%%SHISA%%\shader_dev_IL\include;%%SHISA%%\shader_dev\include\lib'
+
+  # path to a config file used by preprocessor
+  SP3_PREPROCESSOR_CONFIG_FILE: '%%SHISA%%\sp3_config.log'
+
+  # path to the ThreadTrace viewing tool (ThreadTraceView.exe) Version 0.7.9.13 or higher is recommended
+  TT_VIEW_TOOL: 'C:\ThreadTraceViewer\ThreadTraceView.exe'
+
+  # TT_OPTS is optional cli arg for ThreadTraceView. The env var is optional and could be blank or unset.
+  # The intend is to suppress popup dialog when opening tracefile.
+  # GFX9 and older traces require manual asic family selection with -a option
+  # GFX10+ traces have this information embedded. TTraceView will not open a tracefile and show usage info instead as there is no valid selection for gfx10+ asics for -a option.
+  #  gfx8 example setx TT_OPTS "-a VI"
+  #  gfx9 example setx TT_OPTS "-a GFX9"
+  #  gfx10+ example setx TT_OPTS "-nd"
+  TT_OPTS: '-nd'
+
+  
