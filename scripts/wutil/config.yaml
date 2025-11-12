@@ -15,6 +15,10 @@ devtools:
   git:
     user_name: "gryang"
     git_email: "grant.yang@amd.com"
+  p4:
+    port: "mkdcvp4p01:1666"
+    user: "gryang"
+    client: "grant-shisa-dk"
 
 wsl:
   enable: 1

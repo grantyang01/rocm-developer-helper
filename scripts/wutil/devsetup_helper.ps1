@@ -1,5 +1,6 @@
 . "$PSScriptRoot\tools.ps1"
 . "$PSScriptRoot\git_helper.ps1"
+. "$PSScriptRoot\p4_helper.ps1"
 
 function Install-DevelopmentTools {
     try {
@@ -65,6 +66,9 @@ function Install-DevelopmentTools {
          Write-Host "Installing p4v..." -ForegroundColor Cyan
         InstallPackage -PackageId 'Perforce.P4V' `
                        -VerifyCommand { Test-Path "C:\Program Files\Perforce\p4v.exe" }
+        
+        # Configure P4 settings from config.yaml
+        Set-P4Config
 
         <# 
         install copilot cli pre-requirements:
