@@ -174,3 +174,50 @@ function close_container() {
 function remove_dangling() {
     docker rmi $(docker images -f "dangling=true" -q)
 }
+
+function dk_status() {
+    # Get actual CPU usage per container by summing process-level CPU from docker top
+    # Normalizes to system-wide percentage (matching htop's overall view)
+    
+    # Get number of CPU cores
+    local num_cores=$(nproc)
+    
+    printf "%-30s %8s %8s\n" "NAME" "CPU%" "PROCS"
+    printf "%-30s %8s %8s\n" "----" "----" "-----"
+    
+    # Temporary file to store results for sorting
+    local temp_file=$(mktemp)
+    
+    # Get all running containers
+    docker ps --format "{{.Names}}" | while read -r container_name; do
+        # Get CPU usage from docker top (%CPU is per-core, need to normalize)
+        local cpu_sum=$(docker top "$container_name" -o pid,ppid,pcpu,cmd 2>/dev/null | \
+            awk -v cores="$num_cores" 'NR>1 {sum += $3} END {printf "%.2f", sum/cores}')
+        
+        # Count number of processes
+        local proc_count=$(docker top "$container_name" 2>/dev/null | awk 'END {print NR-1}')
+        
+        # Output: container_name cpu_sum proc_count
+        printf "%s %.2f %d\n" "$container_name" "$cpu_sum" "$proc_count" >> "$temp_file"
+    done
+    
+    # Sort by CPU (column 2) in descending order and format output
+    sort -k2,2rn "$temp_file" | while read -r name cpu procs; do
+        printf "%-30s %7.2f%% %8d\n" "$name" "$cpu" "$procs"
+    done
+    
+    # Calculate summary totals
+    local total_cpu=$(awk '{sum += $2} END {printf "%.2f", sum}' "$temp_file")
+    local total_procs=$(awk '{sum += $3} END {print sum}' "$temp_file")
+    
+    # Get system-wide CPU usage from top
+    local system_cpu=$(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | cut -d'%' -f1)
+    
+    # Print summary
+    printf "%-30s %8s %8s\n" "----" "----" "-----"
+    printf "%-30s %7.2f%% %8d\n" "TOTAL (containers)" "$total_cpu" "$total_procs"
+    printf "%-30s %7s%%\n" "SYSTEM (top)" "$system_cpu"
+    
+    # Clean up temp file
+    rm -f "$temp_file"
+}
