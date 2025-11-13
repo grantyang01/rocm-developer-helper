@@ -59,14 +59,20 @@ function Get-ShisaSrc {
         $excludes = @(
             '--exclude=.vs',
             '--exclude=.vscode',
-            '--exclude=bin',
+            '--exclude=build',
+            '--exclude=build-debug',
+            '--exclude=.stack-work',
             '--exclude=obj',
             '--exclude=.git',
+            '--exclude=x64',
+            '--exclude=Debug',
+            '--exclude=Release',
             '--exclude=*.user',
             '--exclude=*.suo',
-            '--exclude=*.vcxproj.filters'
+            '--exclude=*.vcxproj.filters',
+            '--exclude=tools/visual_studio_plugins/*/bin'
         )
-        
+                
         Write-Host "Creating archive: $outputPath" -ForegroundColor Cyan
         & tar -czf $outputPath @excludes @folders
 

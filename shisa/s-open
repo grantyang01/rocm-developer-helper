@@ -22,11 +22,13 @@ close_container "$instance_name"
 #        `-e LD_LIBRARY_PATH=/SHISA/bin-hip-6.5/:/SHISA/bin:/opt/rocm/lib/llvm/lib `
 
 # launch shisa in background
+work_dir=$(realpath "${HOME}/work")
 if ! docker run -it `
         `--detach `
-        `-v ${HOME}/work/shisa:/SHISA/. `
+        `-v ${work_dir}/shisa:/SHISA/. `
         `-v ${HOME}:${HOME} `
-        `-w ${HOME}/work/misa `
+        `-v ${work_dir}:${work_dir} `
+        `-w ${work_dir}/misa `
         `-p 127.0.0.1:9346:9339 `
         `--device=/dev/kfd `
         `--device=/dev/dri `
@@ -44,7 +46,7 @@ if (( $# == 0 )); then
     fi
 else 
     # shisa setup
-    if ! docker exec -it "$instance_name" bash -c "cd ../shisa;${rdh_root}/shisa/s-setup"; then
+    if ! docker exec -it "$instance_name" bash -c "cd ../shisa;${HOME}/work/rdh/shisa/s-setup"; then
         die "fail: setup shisa"
     fi
 fi

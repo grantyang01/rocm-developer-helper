@@ -57,14 +57,18 @@ function deploy_linux() {
     log "4. ++++++++++++++++++++ build shisa docker: succ +++++++++++++++++"
 
     popd
-    rmdir -rf "$tmp_dir"
+    rm -rf "$tmp_dir"
 
     # step 5: gpu-interface setup
     log "5. ++++++++++++++++++++ gpu-interface setup +++++++++++++++++"
+    if ! gi-setup 1; then
+        die "fail: clone gpu-interface"
+    fi
+
     if ! gi-open setup; then
         die "fail: gi-open gpu-interface"
     fi
-    log "5. ++++++++++++++++++++ gpu-interface setup: sucess +++++++++++++++++"
+    log "5. ++++++++++++++++++++ gpu-isnterface setup: sucess +++++++++++++++++"
     sudo chown -R ${USER}:${USER} $target/bin $target/binDebug
 
     # step 6: shisa setup

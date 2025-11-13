@@ -19,13 +19,12 @@ fi
 close_container "$instance_name_gi"
 
 # launch gpu-interface in background
+work_dir=$(realpath "${HOME}/work-pos/work-lnk")
 if ! docker run -it `
         `--detach `
-        `-v ${HOME}/work/shisa:/SHISA/. `
+        `-v ${work_dir}/shisa:/SHISA/. `
         `-e SHISA=/SHISA `
-        `-v ${HOME}/work:${HOME}/work `
-        `-v ${HOME}/work/.ssh:/root/.ssh `
-        `-v ${HOME}/.vscode-server:/root/.vscode-server `
+        `-v ${HOME}:${HOME} `
         `--device=/dev/kfd `
         `--device=/dev/dri `
         `-w ${HOME}/work `
@@ -40,7 +39,7 @@ fi
 
 # activate rdh
 if ! docker exec "$instance_name_gi" `
-            `bash -c "echo 'source ${rdh_root}/activate' >> /root/.bashrc"; then
+            `bash -c "echo 'source ${HOME}/work/rdh/activate' >> /root/.bashrc"; then
     die "fail: rdh activate"
 fi
 
@@ -52,7 +51,7 @@ if (( $# == 0 )); then
     fi
 else 
     # run g-setup
-    if ! docker exec -it "$instance_name_gi" bash -c "${rdh_root}/shisa/gi-setup"; then
+    if ! docker exec -it "$instance_name_gi" bash -c "${HOME}/work/rdh/shisa/gi-setup"; then
         die "fail: setup gpu-interface"
     fi
 fi

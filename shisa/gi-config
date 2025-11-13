@@ -3,13 +3,3 @@ rocm_version_gi=6.4.1
 rocm_os_version_gi=22.04
 image_name_gi=gpu-interface-ubuntu-${rocm_os_version_gi}-rocm-${rocm_version_gi}
 instance_name_gi=gpu-interface
-
-# user and PAT to access https://github.amd.com/LibAmd/SHISA_gpu_interface
-#gi_branch=v11_cache_coher_pm4_mode
-gh_user=gryang
-pat=
-
-# github_emu
-# user and PAT to access https://github.com/AMD-Radeon-Driver
-# gh_user=gryang
-# 
