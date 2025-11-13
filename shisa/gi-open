@@ -25,22 +25,12 @@ if ! docker run -it `
         `-v ${work_dir}/shisa:/SHISA/. `
         `-e SHISA=/SHISA `
         `-v ${HOME}:${HOME} `
-        `--device=/dev/kfd `
-        `--device=/dev/dri `
-        `-w ${HOME}/work `
-        `--group-add video `
-        `--cap-add=SYS_PTRACE `
-        `--security-opt seccomp=unconfined `
+        `-v ${work_dir}:${work_dir} `
+        `-w ${work_dir} `
         `--name $instance_name_gi `
         `--hostname $instance_name_gi `
         `$image_name_gi > /dev/null; then
     die "fail to run: $image_name_gi"
-fi
-
-# activate rdh
-if ! docker exec "$instance_name_gi" `
-            `bash -c "echo 'source ${HOME}/work/rdh/activate' >> /root/.bashrc"; then
-    die "fail: rdh activate"
 fi
 
 # enter or run setup
@@ -51,7 +41,7 @@ if (( $# == 0 )); then
     fi
 else 
     # run g-setup
-    if ! docker exec -it "$instance_name_gi" bash -c "${HOME}/work/rdh/shisa/gi-setup"; then
+    if ! docker exec -it "$instance_name_gi" bash -c "${work_dir}/rdh/shisa/gi-setup"; then
         die "fail: setup gpu-interface"
     fi
 fi

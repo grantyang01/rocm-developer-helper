@@ -1,5 +1,5 @@
 #!/usr/bin/bash
-rocm_version_gi=6.4.1
-rocm_os_version_gi=22.04
+rocm_version_gi=7.0
+rocm_os_version_gi=24.04
 image_name_gi=gpu-interface-ubuntu-${rocm_os_version_gi}-rocm-${rocm_version_gi}
 instance_name_gi=gpu-interface

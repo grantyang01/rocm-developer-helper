@@ -25,8 +25,19 @@ close_container "$instance_name_gi"
 
 # docker build
 log "docker build: $image_name_gi"
+
+# get docker user options
+create_user_options="--build-arg DUID=$(id -u) `
+                    `--build-arg DGID=$(id -g) `
+                    `--build-arg DUSERNAME=$(whoami | sed -e 's/-//g') `
+                    `--build-arg DHOME=${HOME} `
+                    `--build-arg DVGID=$(getent group | grep -Po 'video:\w:\K\d+') `
+                    `--build-arg DRGID=$(getent group | grep -Po 'render:\w:\K\d+') `
+                    `--build-arg DSHELL=${SHELL}"
+
 if ! docker build -t "$image_name_gi" `
                  `-f $docker_file `
+                 `${create_user_options} `
                  `--build-arg ROCM_VERSION=$rocm_version_gi `
                  `--build-arg ROCM_OS_VERSION=$rocm_os_version_gi .; then
     die "fail to build: $image_name_gi"
