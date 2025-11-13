@@ -19,7 +19,7 @@ fi
 close_container "$instance_name_gi"
 
 # launch gpu-interface in background
-work_dir=$(realpath "${HOME}/work-pos/work-lnk")
+work_dir=$(realpath "${HOME}/work")
 if ! docker run -it `
         `--detach `
         `-v ${work_dir}/shisa:/SHISA/. `
