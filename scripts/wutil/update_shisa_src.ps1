@@ -87,3 +87,5 @@ function Get-ShisaSrc {
         Pop-Location
     }
 }
+
+Get-ShisaSrc
