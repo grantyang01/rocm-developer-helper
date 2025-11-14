@@ -7,21 +7,26 @@ ARG TT_OPTS
 RUN test -n "$SP3_ASIC" || (echo "--build-arg SP3_ASIC not set" && false)
 
 RUN sudo apt-get update \
- && sudo apt-get install -y unzip vim parallel less cmake pkg-config libgmp-dev libboost-dev libboost-program-options-dev \
- && sudo apt-get install -y build-essential libanyevent-perl libclass-refresh-perl libcompiler-lexer-perl libdata-dump-perl \
- libio-aio-perl libjson-perl libmoose-perl libpadwalker-perl libscalar-list-utils-perl libcoro-perl libexcel-writer-xlsx-perl
-
-RUN curl -O https://download.visualstudio.microsoft.com/download/pr/fea239ad-fd47-4764-aa71-6a147a82f632/20ee58b0bf08ae9f6e76e37ba3765c57/dotnet-runtime-3.1.32-linux-x64.tar.gz \
- && sudo mkdir -p /dotnet \
- && sudo tar zxf dotnet-runtime-3.1.32-linux-x64.tar.gz -C /dotnet
-ENV DOTNET_ROOT="/dotnet" \
-    PATH="$PATH:/dotnet"
-
+ && sudo apt-get install -y \
+    unzip vim parallel less cmake pkg-config \
+    libgmp-dev libboost-dev libboost-program-options-dev \
+    libfmt-dev libdw-dev libmkl-dev \
+    rocblas-dev gfortran rocprim-dev \
+    dotnet-runtime-8.0 \
+    build-essential \
+    libanyevent-perl libclass-refresh-perl libcompiler-lexer-perl \
+    libdata-dump-perl libio-aio-perl libjson-perl libmoose-perl \
+    libpadwalker-perl libscalar-list-utils-perl libcoro-perl \
+    libexcel-writer-xlsx-perl
+  
 RUN curl -LO https://get.haskellstack.org/stable/linux-x86_64.tar.gz \
- && sudo mkdir -p /stack \
- && sudo tar zxf linux-x86_64.tar.gz -C /stack \
- && sudo mv /stack/stack-*/* /stack
-ENV PATH="$PATH:/stack"
+ && mkdir -p ${HOME}/stack ${HOME}/stack-root \
+ && tar zxf linux-x86_64.tar.gz -C ${HOME}/stack \
+ && mv ${HOME}/stack/stack-*/* ${HOME}/stack \
+ && rm -rf linux-x86_64.tar.gz ${HOME}/stack/stack-*
+
+ENV PATH="$PATH:${HOME}/stack"  \
+    STACK_ROOT=${HOME}/stack-root
 
 # Install GHC for Shader Processor (not required but helps to reduce the build time when deployed from VS)
 RUN stack setup --resolver lts-22.29

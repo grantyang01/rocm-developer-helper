@@ -4,7 +4,7 @@ source ${rdh_root}/activate
 source repo-helper
 
 # base os version
-ubuntu_version=22.04
+ubuntu_version=24.04
 
 # unified build dash-board:
 #    1. http://bas.amd.com/dashboard   -- new server, with uid >= 100000

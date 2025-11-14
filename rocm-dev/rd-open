@@ -17,12 +17,13 @@ fi
 # close old instance
 close_container "$instance_name_rd"
 
-# launch shisa in background
+# launch instance in background
+work_dir=$(realpath "${HOME}/work")
 if ! docker run -it `
         `--detach `
-        `-v ${HOME}/work/shisa:/SHISA/. `
         `-v ${HOME}:${HOME} `
-        `-w ${HOME}/work `
+        `-v ${work_dir}:${work_dir} `
+        `-w ${work_dir} `
         `--device=/dev/kfd `
         `--device=/dev/dri `
         `--cap-add=SYS_PTRACE `

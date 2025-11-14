@@ -28,7 +28,7 @@ if ! docker run -it `
         `-v ${work_dir}/shisa:/SHISA/. `
         `-v ${HOME}:${HOME} `
         `-v ${work_dir}:${work_dir} `
-        `-w ${work_dir}/misa `
+        `-w ${work_dir}/shisa `
         `-p 127.0.0.1:9346:9339 `
         `--device=/dev/kfd `
         `--device=/dev/dri `

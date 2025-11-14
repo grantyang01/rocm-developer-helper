@@ -20,13 +20,14 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV ROCM_VERSION=${ROCM_VER}
 ENV ROCM_PATH=/opt/rocm-${ROCM_VER}
 ENV ROCM_ROOT=/opt/rocm-${ROCM_VER}
+ENV CMAKE_PREFIX_PATH=/opt/rocm-${ROCM_VER}
 ENV PATH=/opt/rocm-${ROCM_VER}/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
 
 # step1: install os packages
 # rocm dev required packages
 RUN apt-get update -y && \
     apt-get upgrade -y && \
-    apt-get install -y ca-certificates cmake git git-lfs doxygen wget libssl-dev zlib1g-dev libfmt-dev python3-venv python3-pip && \
+    apt-get install -y ca-certificates cmake git git-lfs doxygen wget libssl-dev zlib1g-dev libfmt-dev python3-venv python3-pip python3-packaging && \
     apt-get clean
 
 # hipblaslt required packages
@@ -34,8 +35,6 @@ RUN apt-get update -y && \
     apt-get upgrade -y && \
     apt-get install -y libblis-dev && \
     apt-get clean
-
-RUN python3 -m pip install packaging
 
 # rocBLAS rocSolver required packages
 RUN apt-get update -y && \
@@ -45,10 +44,23 @@ RUN apt-get update -y && \
     apt-get clean
 
 # clr
-RUN python3 -m pip install cxxheaderparser
+#RUN python3 -m pip install cxxheaderparser
 
 # unknown below python pkgs missed?
-RUN python3 -m pip install CppHeaderParser joblib ply psutil packaging msgpack regex
+#RUN python3 -m pip install CppHeaderParser joblib ply psutil msgpack regex
+
+# Install available packages via apt
+RUN apt-get install -y \
+    python3-joblib \
+    python3-ply \
+    python3-psutil \
+    python3-msgpack
+
+# Install remaining packages via pip with --break-system-packages
+RUN python3 -m pip install --break-system-packages \
+    cxxheaderparser \
+    CppHeaderParser \
+    regex
 
 # rocprofile sdk required packages
 RUN apt-get update -y && \

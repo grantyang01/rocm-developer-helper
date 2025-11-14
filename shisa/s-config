@@ -5,7 +5,7 @@ source shisa-helper
 source rd-config
 
 rocm_version=6.4.1
-rocm_os_version=22.04
+rocm_os_version=24.04
 image_name=shisa-ubuntu-$rocm_os_version-rocm-$rocm_version
 instance_name=shisa
 
