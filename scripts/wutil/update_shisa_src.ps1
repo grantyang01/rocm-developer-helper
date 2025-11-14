@@ -45,6 +45,15 @@ function Get-ShisaSrc {
             'test_apps'
         )
 
+        # Add .so files from bin directory if they exist
+        if (Test-Path 'bin/*.so') {
+            $folders += 'bin/*.so'
+        }
+
+        if (Test-Path 'binDebug/*.so') {
+            $folders += 'binDebug/*.so'
+        }
+
         # Add all subdirectories under tools\ except visual_studio_plugins
         if (Test-Path 'tools') {
             $toolsDirs = Get-ChildItem -Path 'tools' -Directory | 

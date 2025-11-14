@@ -18,6 +18,7 @@ fi
 
 build_list="test_apps/conv_test `
            `test_apps/misa_conv_test `
+           `test_apps/gemm_test `
            `tools/shader_build `
            `sp3/backend_v3 `
            `sp3/hardened_v2 "

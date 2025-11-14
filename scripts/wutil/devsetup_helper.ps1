@@ -11,17 +11,16 @@ function Install-DevelopmentTools {
             Write-Host "Installing Python (latest: $latestPython)..." -ForegroundColor Cyan
             InstallPackage -PackageId $latestPython `
                            -VerifyCommand { Test-Path "C:\Users\$env:USERNAME\AppData\Local\Programs\Python\Python*\python.exe" }
-            
-            # Refresh PATH to make python and pip available immediately
-            $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + `
-                        [System.Environment]::GetEnvironmentVariable("Path", "User")
-            
-            # Install useful Python packages
-            pip install pypdf jinja2 ruamel.yaml --quiet
-            
         } else {
             Write-Error "Could not find Python package to install"
         }
+        
+        # Refresh PATH to make python and pip available immediately
+        $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + `
+                    [System.Environment]::GetEnvironmentVariable("Path", "User")
+        
+        Write-Host "Installing Python packages (pypdf, jinja2, ruamel.yaml)..." -ForegroundColor Cyan
+        python -m pip install pypdf jinja2 ruamel.yaml --quiet
 
         # sshfs-win
         Write-Host "Installing sshfs-win..." -ForegroundColor Cyan
