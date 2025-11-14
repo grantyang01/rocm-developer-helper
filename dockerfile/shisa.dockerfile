@@ -17,21 +17,8 @@ RUN sudo apt-get update \
     libanyevent-perl libclass-refresh-perl libcompiler-lexer-perl \
     libdata-dump-perl libio-aio-perl libjson-perl libmoose-perl \
     libpadwalker-perl libscalar-list-utils-perl libcoro-perl \
-    libexcel-writer-xlsx-perl
-  
-RUN curl -LO https://get.haskellstack.org/stable/linux-x86_64.tar.gz \
- && mkdir -p ${HOME}/stack ${HOME}/stack-root \
- && tar zxf linux-x86_64.tar.gz -C ${HOME}/stack \
- && mv ${HOME}/stack/stack-*/* ${HOME}/stack \
- && rm -rf linux-x86_64.tar.gz ${HOME}/stack/stack-*
-
-ENV PATH="$PATH:${HOME}/stack"  \
-    STACK_ROOT=${HOME}/stack-root
-
-# Install GHC for Shader Processor (not required but helps to reduce the build time when deployed from VS)
-RUN stack setup --resolver lts-22.29
-# Precompile dependencies for Shader Processor (not required but helps to reduce the build time when deployed from VS)
-RUN stack build --resolver lts-22.29 --only-dependencies megaparsec vector unordered-containers indexed-traversable bytestring-trie half
+    libexcel-writer-xlsx-perl \
+    haskell-stack
 
 RUN echo y | sudo perl -MCPAN -e 'CPAN::Shell->rematein("notest", "install", $_) for @ARGV' List::MoreUtils File::Slurp List::Compare Proc::ProcessTable Perl::LanguageServer
 
