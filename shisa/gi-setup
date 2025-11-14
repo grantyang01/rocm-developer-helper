@@ -55,6 +55,7 @@ function clone_gi() {
         branch_opt="-b ${gi_branch}"
     fi
 
+    # clone from https://github.com/LibAmd/SHISA_gpu_interface.git
     if ! git clone git@github.com:LibAmd/SHISA_gpu_interface.git $branch_opt $target; then
         die "fail to clone: https://github.amd.com/LibAmd/SHISA_gpu_interface"
     fi
@@ -147,7 +148,8 @@ function build_gi() {
 # setup_rocr 
 
 if [[ "$1" == "1" ]]; then
-    clone_gi gpu_interface
+    # clone_gi gpu_interface
+    python3 ${rdh_root}/scripts/putil/clone_gi.py gpu_interface
 else
     # run inside docker instance of $instance_name_gi
     if ! is_docker_instance $instance_name_gi; then
