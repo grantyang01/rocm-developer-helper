@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Clone GPU Interface repository - cross-platform (Windows 11 & Linux)"""
 
 import sys
