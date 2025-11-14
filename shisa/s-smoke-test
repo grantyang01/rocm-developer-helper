@@ -1,0 +1,16 @@
+#!/bin/bash
+rdh_root="$(realpath $0|xargs dirname)/.."
+source ${rdh_root}/activate
+
+# expose self
+bin_dir=$(realpath $0|xargs dirname)
+SELF_TAG="[$(basename $0)]"
+
+testing="$SHISA/testing"
+shader="$SHISA/shader_dev_IL/shaders/winograd/Conv_Winograd_v40_6_0_IL.sp3"
+
+log "======================== Running Winograd Conv Test ========================"
+conv_test -W128 -H128 -C4 -N2 -K320 -S3 -R3 -k1 --perf all --out_header 1 -p $shader
+
+log "======================== Running Test Cases (a_case_3) ========================"
+perl $testing/run_cases.pl -o $SHISA/log_dir $testing/cases/a_case_3.csv --perf all -p $shader
