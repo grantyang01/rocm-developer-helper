@@ -26,3 +26,20 @@ devtools:
 
 SHISA:
   SHISA: *SHISA_ROOT
+  
+  # Remote SHISA Linux development environment (optional)
+  # Uncomment and configure if using remote Linux machine for SHISA development
+  # remote:
+  #   # SSH connection string (username@hostname)
+  #   SHISA_REMOTE: "username@hostname"
+  #   
+  #   # Remote machine configuration
+  #   # - SP3_ASIC: ASIC name on remote machine (e.g., MI300, NAVI31)
+  #   # - TT_OPTS: '-a GFX9' for Vega/MI, '-nd' for Navi
+  #   SHISA_REMOTE_CONFIG: "SP3_ASIC=MI300 TT_OPTS='-a GFX9'"
+  #   
+  #   # Port for remote server (each user should use a different port to avoid conflicts)
+  #   SHISA_REMOTE_SERVER_PORT: 9339
+  #   
+  #   # Local port for port forwarding (optional, defaults to 19339)
+  #   SHISA_LOCAL_SERVER_PORT: 19339

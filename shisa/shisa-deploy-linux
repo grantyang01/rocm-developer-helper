@@ -73,7 +73,7 @@ function deploy_linux() {
 
     # step 6: shisa setup
     log "6. ++++++++++++++++++++ shisa setup +++++++++++++++++"
-    if ! s-open setup; then
+    if ! s-open -s; then
         die "fail: s-run setup shisa doker"
     fi
     log "6. ++++++++++++++++++++ shisa setup: sucess +++++++++++++++++"

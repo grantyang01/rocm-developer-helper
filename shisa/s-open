@@ -1,4 +1,5 @@
 #!/usr/bin/bash
+
 rdh_root="$(realpath $0|xargs dirname)/.."
 source ${rdh_root}/activate
 
@@ -8,6 +9,68 @@ bin_dir=$(realpath $0|xargs dirname)
 # import tools
 source docker-helper
 source s-config
+
+# Usage helper
+usage() {
+    cat << EOF
+Usage: $(basename $0) [-p port] [-s] [-r] [-h]
+
+Start SHISA Docker container and optionally run setup or debug server.
+
+Options:
+  -p PORT    Host port to map to container's 9339 (default: 9346)
+  -s         Run s-setup instead of entering container
+  -r         Run ShisaToolsServer.Linux64 (remote debug server)
+  -h         Show this help message and exit
+
+Examples:
+  $(basename $0)              Enter container with port 9346 (default)
+  $(basename $0) -p 9339      Enter container with port 9339
+  $(basename $0) -s           Run setup with port 9346
+  $(basename $0) -r           Run SHISA Tools Server with port 9346
+  $(basename $0) -p 9338 -r   Run SHISA Tools Server with port 9338
+
+EOF
+}
+
+# Parse arguments using getopts
+host_port=9346
+run_setup=0
+run_server=0
+
+while getopts "p:srh" opt; do
+    case $opt in
+        p)
+            host_port=$OPTARG
+            if ! [[ "$host_port" =~ ^[0-9]+$ ]]; then
+                die "Invalid port: $host_port (must be numeric)"
+            fi
+            ;;
+        s)
+            run_setup=1
+            ;;
+        r)
+            run_server=1
+            ;;
+        h)
+            usage
+            exit 0
+            ;;
+        \?)
+            usage
+            die "Invalid option: -$OPTARG"
+            ;;
+        :)
+            usage
+            die "Option -$OPTARG requires an argument"
+            ;;
+    esac
+done
+
+# Validate: can't run both setup and server
+if (( run_setup == 1 && run_server == 1 )); then
+    die "Cannot specify both -s (setup) and -r (server) at the same time"
+fi
 
 # run at host
 if is_inside_docker; then
@@ -29,7 +92,7 @@ if ! docker run -it `
         `-v ${HOME}:${HOME} `
         `-v ${work_dir}:${work_dir} `
         `-w ${work_dir}/shisa `
-        `-p 127.0.0.1:9346:9339 `
+        `-p 127.0.0.1:${host_port}:9339 `
         `--device=/dev/kfd `
         `--device=/dev/dri `
         `--name $instance_name `
@@ -38,16 +101,22 @@ if ! docker run -it `
     die "fail to run: $image_name"
 fi
 
-# enter or run setup
-if (( $# == 0 )); then
-    # default: enter docker
-    if ! docker exec -it "$instance_name" bash; then
-        die "fail: exec $instance_name"
+# enter, run setup, or run server
+if (( run_server == 1 )); then
+    # Run SHISA Tools Server
+    log "Starting SHISA Tools Server on 0.0.0.0:9339 (mapped to host ${host_port})"
+    if ! docker exec -it "$instance_name" /SHISA/bin/ShisaToolsServer.Linux64 0.0.0.0:9339; then
+        die "fail: ShisaToolsServer.Linux64"
     fi
-else 
+elif (( run_setup == 1 )); then
     # shisa setup
     if ! docker exec -it "$instance_name" bash -c "cd ../shisa;${HOME}/work/rdh/shisa/s-setup"; then
         die "fail: setup shisa"
+    fi
+else
+    # default: enter docker
+    if ! docker exec -it "$instance_name" bash; then
+        die "fail: exec $instance_name"
     fi
 fi
 

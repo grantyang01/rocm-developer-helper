@@ -164,3 +164,50 @@ function Invoke-ShisaSetup {
     # Pipe "y" to auto-confirm prompts (stdin is not properly connected through cmd /c)
     "y" | & $env:comspec /c "`"$vsDevCmdPath`" && $Command"
 }
+
+function Connect-ShisaRemoteServer {
+    try {
+        $config = Read-Yaml -Path "$PSScriptRoot\config.yaml"
+        if (-not $config -or -not $config.SHISA) {
+            Write-Error "Failed to read SHISA configuration from config.yaml"
+            return $false
+        }
+        
+        # Check if remote configuration exists
+        if (-not ($config.SHISA.remote)) {
+            Write-Error "No remote SHISA configuration found in config.local.yaml"
+            Write-Host "Please configure SHISA.remote section in config.local.yaml" -ForegroundColor Yellow
+            return $false
+        }
+        
+        $remote = $config.SHISA.remote
+        
+        # Validate required configuration
+        if (-not $remote.SHISA_REMOTE) {
+            Write-Error "SHISA_REMOTE not configured (username@hostname)"
+            return $false
+        }
+        
+        $remoteHost = $remote.SHISA_REMOTE
+        $remotePort = if ($remote.SHISA_REMOTE_SERVER_PORT) { $remote.SHISA_REMOTE_SERVER_PORT } else { 9339 }
+        $localPort = if ($remote.SHISA_LOCAL_SERVER_PORT) { $remote.SHISA_LOCAL_SERVER_PORT } else { 19339 }
+        
+        Write-Host "`n=== SHISA Remote Debug Server Connection ===" -ForegroundColor Cyan
+        Write-Host "Remote: $remoteHost" -ForegroundColor Green
+        Write-Host "Port forwarding: localhost:$localPort -> remote:$remotePort" -ForegroundColor Green
+        
+        # Launch s-open with server on remote machine and establish SSH tunnel
+        Write-Host "`nStarting SHISA container and server on remote..." -ForegroundColor Cyan
+        Write-Host "Running: s-open -p $remotePort -r" -ForegroundColor Gray
+        Write-Host "Press Ctrl+C to stop server and disconnect`n" -ForegroundColor Yellow
+        
+        # SSH with port forwarding and run s-open -r
+        ssh -L "${localPort}:127.0.0.1:${remotePort}" $remoteHost -o ServerAliveInterval=60 -t "s-open -p $remotePort -r"
+        
+        return $true
+    }
+    catch {
+        Write-Error "Failed to connect to remote SHISA server: $_"
+        return $false
+    }
+}
