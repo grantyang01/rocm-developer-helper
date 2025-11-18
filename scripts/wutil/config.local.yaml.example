@@ -1,0 +1,28 @@
+# Local Configuration Template
+# 
+# Instructions:
+#   1. Copy this file to config.local.yaml
+#   2. Fill in your personal values
+#   3. config.local.yaml is gitignored and won't be committed
+#
+# Usage:
+#   Copy-Item config.local.yaml.example config.local.yaml
+
+# Common paths (using YAML anchors for reuse)
+paths:
+  WORK_DIR: &WORK_DIR "C:\\work"
+  SHISA_ROOT: &SHISA_ROOT "C:\\work\\shisa"
+
+devtools:
+  git:
+    user_name: "your-git-username"
+    git_email: "your.email@amd.com"
+  p4:
+    port: "your-p4-server:port"
+    user: "your-p4-username"
+    client: "your-client-name"
+    root: *SHISA_ROOT
+    view: "//depot/path/to/your/project/..."
+
+SHISA:
+  SHISA: *SHISA_ROOT

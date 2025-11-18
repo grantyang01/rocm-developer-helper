@@ -1,26 +1,5 @@
 . "$PSScriptRoot\tools.ps1"
 
-function Invoke-InVSEnvironment {
-    param(
-        [Parameter(Mandatory = $true)]
-        [string]$Command
-    )
-    
-    $vsDevCmdPath = "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\Tools\VsDevCmd.bat"
-    
-    if (-not (Test-Path $vsDevCmdPath)) {
-        Write-Error "Visual Studio 2022 not found at: $vsDevCmdPath"
-        return $false
-    }
-    
-    Write-Host "Running command in VS 2022 environment: $Command" -ForegroundColor Cyan
-    
-    # Execute command in CMD with VS environment loaded
-    & $env:comspec /c "`"$vsDevCmdPath`" && $Command"
-    
-    return ($LASTEXITCODE -eq 0)
-}
-
 function Install-ShisaTools {
     # Read YAML configuration to get SHISA path
     $config = Read-Yaml -Path "$PSScriptRoot\config.yaml"
@@ -52,13 +31,6 @@ function Install-ShisaTools {
     InstallPackage -PackageId 'commercialhaskell.stack' `
                    -VerifyCommand { Test-Path "C:\Users\$env:USERNAME\AppData\Roaming\local\bin\stack.exe" }
   
-    # Add source globally (run once from anywhere):
-    Write-Host "Configuring NuGet sources..." -ForegroundColor Cyan
-    $existingSources = dotnet nuget list source 2>$null | Out-String
-    if ($existingSources -notmatch 'nuget\.org') {
-        $result = dotnet nuget add source https://api.nuget.org/v3/index.json --name nuget.org 2>&1
-    }
-    
     # Clean Visual Studio plugins build artifacts manually
     Write-Host "Cleaning Visual Studio plugins build artifacts..." -ForegroundColor Cyan
     $pluginsPath = Join-Path $shisaPath "tools\visual_studio_plugins"
@@ -177,6 +149,18 @@ function Invoke-ShisaSetup {
         return $false
     }
     
+    # Check for Visual Studio
+    $vsDevCmdPath = "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\Tools\VsDevCmd.bat"
+    if (-not (Test-Path $vsDevCmdPath)) {
+        Write-Error "Visual Studio 2022 not found at: $vsDevCmdPath"
+        return $false
+    }
+    
     Write-Host "Running SHISA setup script from: $shisaRoot" -ForegroundColor Cyan
-    return Invoke-InVSEnvironment ('perl "{0}"' -f $setupScript)
+    $Command = 'perl "{0}"' -f $setupScript
+    Write-Host "Running command in VS 2022 environment: $Command" -ForegroundColor Cyan
+    
+    # Execute command in CMD with VS environment loaded
+    # Pipe "y" to auto-confirm prompts (stdin is not properly connected through cmd /c)
+    "y" | & $env:comspec /c "`"$vsDevCmdPath`" && $Command"
 }

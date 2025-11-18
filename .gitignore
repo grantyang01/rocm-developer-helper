@@ -1,0 +1,3 @@
+# Local configuration files (contain sensitive/personal data)
+scripts/wutil/config.local.yaml
+

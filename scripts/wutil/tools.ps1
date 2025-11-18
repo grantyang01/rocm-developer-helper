@@ -6,6 +6,27 @@ function Test-Administrator {
 }
 
 # Generic function to read YAML file
+function Merge-Hashtables {
+    param (
+        [hashtable]$Base,
+        [hashtable]$Override
+    )
+    
+    $result = $Base.Clone()
+    
+    foreach ($key in $Override.Keys) {
+        if ($result.ContainsKey($key) -and $result[$key] -is [hashtable] -and $Override[$key] -is [hashtable]) {
+            # Recursively merge nested hashtables
+            $result[$key] = Merge-Hashtables -Base $result[$key] -Override $Override[$key]
+        } else {
+            # Override value
+            $result[$key] = $Override[$key]
+        }
+    }
+    
+    return $result
+}
+
 function Read-Yaml {
     param (
         [Parameter(Mandatory = $true)]
@@ -37,6 +58,17 @@ function Read-Yaml {
                         $yamlData[$section][$matches[1]] = $matches[2]
                     }
                 }
+            }
+        }
+        
+        # Check for local override file and merge if it exists
+        $localPath = $Path -replace '\.yaml$', '.local.yaml'
+        if (Test-Path $localPath) {
+            if (Get-Module -ListAvailable -Name powershell-yaml) {
+                $localData = Get-Content $localPath | ConvertFrom-Yaml
+                $yamlData = Merge-Hashtables -Base $yamlData -Override $localData
+            } else {
+                Write-Warning "config.local.yaml found but requires powershell-yaml module for proper merging"
             }
         }
         

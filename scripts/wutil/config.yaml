@@ -4,6 +4,10 @@
 virtualization:
   enable: 1
 
+wsl:
+  enable: 1
+  distro_name: "Ubuntu-24.04"
+
 chocolatey:
   enable: 1
 
@@ -12,17 +16,38 @@ ssh:
 
 devtools:
   enable: 1
-  git:
-    user_name: "gryang"
-    git_email: "grant.yang@amd.com"
-  p4:
-    port: "mkdcvp4p01:1666"
-    user: "gryang"
-    client: "grant-shisa-dk"
-
-wsl:
-  enable: 1
-  distro_name: "Ubuntu-24.04"
+  # Git and P4 settings are configured in config.local.yaml (not committed to git)
+  # Copy config.local.yaml.example to config.local.yaml and fill in your values
+  
+  visualstudio:
+    # Visual Studio 2022 Community components (always includes recommended)
+    # Installation is fully unattended (no GUI, no prompts) using --quiet --wait flags
+    # Installation takes 30 minutes depending on components
+    components:
+      - "Microsoft.VisualStudio.Workload.NativeDesktop"
+      - "Microsoft.VisualStudio.Workload.ManagedDesktop"
+      - "Microsoft.VisualStudio.Workload.VisualStudioExtension"
+      - "Microsoft.VisualStudio.Component.Windows11SDK.26100"
+      - "Microsoft.VisualStudio.ComponentGroup.VC.Tools.142.x86.x64"
+      - "Microsoft.VisualStudio.Component.VC.14.29.16.11.x86.x64.Spectre"
+      - "Microsoft.Net.Component.4.8.TargetingPack"
+      - "Microsoft.VisualStudio.Component.TextTemplating"
+      - "Microsoft.VisualStudio.Component.DslTools"
+      # Below are the component names and their corresponding IDs. The IDs may evolve, so always refer to the links above for the latest info.
+      # Component ID reference documentation:
+      #   https://learn.microsoft.com/en-us/visualstudio/install/workload-and-component-ids?view=vs-2022
+      #   https://learn.microsoft.com/en-us/visualstudio/install/workload-component-id-vs-community?view=vs-2022&preserve-view=true
+      #
+      # Component name to ID mapping (IDs may evolve, always refer to the links above):
+      #   Desktop development with C++                                                Microsoft.VisualStudio.Workload.NativeDesktop
+      #   .NET desktop development                                                    Microsoft.VisualStudio.Workload.ManagedDesktop
+      #   Visual Studio extension development                                         Microsoft.VisualStudio.Workload.VisualStudioExtension
+      #   Windows 11 SDK (10.0.26100.3916)                                            Microsoft.VisualStudio.Component.Windows11SDK.26100
+      #   MSVC v142 - VS 2019 C++ x64/x86 build tools (v14.29)                        Microsoft.VisualStudio.ComponentGroup.VC.Tools.142.x86.x64
+      #   MSVC v142 - VS 2019 C++ x64/x86 Spectre-mitigated libs (v14.29-16.11)       Microsoft.VisualStudio.Component.VC.14.29.16.11.x86.x64.Spectre
+      #   .NET Framework 4.8 targeting pack                                           Microsoft.Net.Component.4.8.TargetingPack
+      #   Text Template Transformation                                                Microsoft.VisualStudio.Component.TextTemplating
+      #   Modeling SDK                                                                Microsoft.VisualStudio.Component.DslTools
 
 hipsdk:
   enable: 1
@@ -32,17 +57,11 @@ hipsdk:
 
 gpu_interface:
   enable: 1
-  gh_user: ""  # GitHub username for AMD internal repos
-  pat: ""      # Personal Access Token for GitHub
-  work_dir: "C:\\work\\rdh\\shisa"
-  rocm_version_gi: "6.4"
-  gi_branch: ""  # Leave empty for default branch
 
 SHISA:
   enable: 1
 
-  # SHISA root dir
-  SHISA: 'c:\work\shisa'
+  # SHISA root dir is configured in config.local.yaml
 
   # Subdirectories to add to PATH (relative to SHISA root)
   path_dirs:

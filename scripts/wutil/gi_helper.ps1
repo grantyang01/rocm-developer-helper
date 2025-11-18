@@ -117,3 +117,54 @@ function Build-GpuInterface {
         return $false
     }
 }
+
+function Install-GpuInterface {
+    $originalDir = Get-Location
+    
+    try {
+        # Read configuration to get WORK_DIR
+        $config = Read-Yaml -Path "$PSScriptRoot\config.yaml"
+        if (-not ($config.paths -and $config.paths.WORK_DIR)) {
+            throw "WORK_DIR not found in config.yaml. Please configure paths.WORK_DIR in config.local.yaml"
+        }
+        $workDir = $config.paths.WORK_DIR
+        
+        Write-Host "Building GPU Interface from source..." -ForegroundColor Cyan
+        
+        # Change to work directory for cloning
+        Set-Location $workDir
+        
+        # Clone GPU Interface repository
+        Write-Host "Cloning GPU Interface repository to: $workDir\gpu_interface" -ForegroundColor Cyan
+        Get-GpuInterface
+        
+        # Build GPU Interface
+        $giSourceDir = Join-Path $workDir "gpu_interface"
+        if (Test-Path $giSourceDir) {
+            Push-Location $giSourceDir
+            try {
+                $success = Build-GpuInterface -SourceDir "."
+                if (-not $success) {
+                    Write-Error "Failed to build GPU Interface."
+                    return $false
+                }
+                return $true
+            }
+            finally {
+                Pop-Location
+            }
+        } else {
+            Write-Warning "GPU Interface source directory not found at: $giSourceDir"
+            Write-Warning "Using pre-built GPU Interface binaries from SHISA setup."
+            return $true  # Not a failure - fallback to pre-built binaries
+        }
+    }
+    catch {
+        Write-Error "GPU Interface installation failed: $_"
+        Write-Warning "Using pre-built GPU Interface binaries from SHISA setup."
+        return $false
+    }
+    finally {
+        Set-Location $originalDir
+    }
+}

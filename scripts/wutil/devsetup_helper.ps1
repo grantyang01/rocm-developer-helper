@@ -66,7 +66,7 @@ function Install-DevelopmentTools {
         InstallPackage -PackageId 'Perforce.P4V' `
                        -VerifyCommand { Test-Path "C:\Program Files\Perforce\p4v.exe" }
         
-        # Configure P4 settings from config.yaml
+        # Configure P4 settings and create shisa workspace
         Set-P4Config
 
         <# 
@@ -87,20 +87,28 @@ function Install-DevelopmentTools {
        
         # visual studio 2022
         Write-Host "Installing VisualStudio 2022 Community..." -ForegroundColor Cyan
-        # components required by shisa development
-        $vsOverrideOptions = "--add Microsoft.VisualStudio.Workload.NativeDesktop " + `
-                             "--add Microsoft.VisualStudio.Workload.ManagedDesktop " + `
-                             "--add Microsoft.VisualStudio.Workload.VisualStudioExtension " + `
-                             "--add Microsoft.VisualStudio.Component.Windows11SDK.26100 " + `
-                             "--add Microsoft.VisualStudio.ComponentGroup.VC.Tools.142.x86.x64 " + `
-                             "--add Microsoft.VisualStudio.Component.VC.14.29.16.11.x86.x64.Spectre " + `
-                             "--add Microsoft.Net.Component.4.8.TargetingPack " + `
-                             "--add Microsoft.VisualStudio.Component.TextTemplating " + `
-                             "--add Microsoft.VisualStudio.Component.DslTools " + `
-                             "--includeRecommended"
+        
+        # Read configuration
+        $config = Read-Yaml -Path "$PSScriptRoot\config.yaml"
+        
+        # Build Visual Studio component options from config
+        $vsComponents = $config.devtools.visualstudio.components
+        $vsOverrideOptions = ($vsComponents | ForEach-Object { "--add $_" }) -join " "
+        $vsOverrideOptions += " --includeRecommended --quiet --wait"
 
         InstallPackage -PackageId 'Microsoft.VisualStudio.2022.Community' `
                        -OverrideOptions $vsOverrideOptions
+
+        # Refresh PATH to make dotnet available immediately
+        $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + `
+                    [System.Environment]::GetEnvironmentVariable("Path", "User")
+
+        # Add source globally
+        Write-Host "Configuring NuGet sources..." -ForegroundColor Cyan
+        $existingSources = dotnet nuget list source 2>$null | Out-String
+        if ($existingSources -notmatch 'nuget\.org') {
+            $result = dotnet nuget add source https://api.nuget.org/v3/index.json --name nuget.org 2>&1
+        }
 
         Write-Host "Development tools installation completed!" -ForegroundColor Green
         return $true
@@ -143,22 +151,3 @@ function Uninstall-DevelopmentTools {
 
     winget uninstall --id 'Microsoft.VisualStudio.2022.Community' --all-versions --accept-source-agreements
 }
-
-<#
-visual studio 2022
-SHISA need below visual studio components. To look up the id from component name refer to the links for the latest ids:
-    https://learn.microsoft.com/en-us/visualstudio/install/workload-and-component-ids?view=vs-2022
-    https://learn.microsoft.com/en-us/visualstudio/install/workload-component-id-vs-community?view=vs-2022&preserve-view=true
-
-Below are current name to id maps, and component ID might evolve, so always refer to the links for the latest info:
-name                                                                        id
-Desktop development with C++                                                Microsoft.VisualStudio.Workload.NativeDesktop
-.NET desktop development                                                    Microsoft.VisualStudio.Workload.ManagedDesktop
-Visual Studio extension development                                         Microsoft.VisualStudio.Workload.VisualStudioExtension
-Windows 11 SDK (10.0.26100.3916)                                            Microsoft.VisualStudio.Component.Windows11SDK.26100
-MSVC v142 - VS 2019 C++ x64/x86 build tools (v14.29)                        Microsoft.VisualStudio.ComponentGroup.VC.Tools.142.x86.x64
-MSVC v142 - VS 2019 C++ x64/x86 Spectre-mitigated libs (v14.29-16.11)       Microsoft.VisualStudio.Component.VC.14.29.16.11.x86.x64.Spectre
-.NET Framework 4.8 targeting pack                                           Microsoft.Net.Component.4.8.TargetingPack
-Text Template Transformation                                                Microsoft.VisualStudio.Component.TextTemplating
-Modeling SDK                                                                Microsoft.VisualStudio.Component.DslTools
-#>

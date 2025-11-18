@@ -5,9 +5,10 @@
 . "$PSScriptRoot\choco_helper.ps1"
 . "$PSScriptRoot\devsetup_helper.ps1"
 . "$PSScriptRoot\hipsdk_helper.ps1"
+. "$PSScriptRoot\gi_helper.ps1"
 . "$PSScriptRoot\shisa_helper.ps1"
 
-function Setup-Windows {
+function Initialize-WindowsDevEnvironment {
 
     # Check if running as administrator
     if (!(Test-Administrator)) {
@@ -125,17 +126,25 @@ function Setup-Windows {
             return $false
         }
 
-        <#
         # Run SHISA setup script
         Write-Host "Running SHISA setup script..." -ForegroundColor Cyan
-        if (!(Invoke-ShisaSetup)) {
+        Invoke-ShisaSetup
+        if ($LASTEXITCODE -ne 0) {
             Write-Error "SHISA setup failed."
             return $false
         }
-        #>
     }
+    
+    # Build GPU Interface from source if enabled (after SHISA setup to overwrite pre-built binaries)
+    if ($config.gpu_interface.enable) {
+        $success = Install-GpuInterface
+        if (-not $success) {
+            Write-Warning "GPU Interface build failed, using pre-built binaries from SHISA setup."
+        }
+    }
+
     return $true
 }
 
-Setup-Windows | Out-Null
-
+Install-GpuInterface
+#Initialize-WindowsDevEnvironment
