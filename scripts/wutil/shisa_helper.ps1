@@ -198,11 +198,11 @@ function Connect-ShisaRemoteServer {
         
         # Launch s-open with server on remote machine and establish SSH tunnel
         Write-Host "`nStarting SHISA container and server on remote..." -ForegroundColor Cyan
-        Write-Host "Running: s-open -p $remotePort -r" -ForegroundColor Gray
+        Write-Host "Running: ~/work/rdh/shisa/s-open -p $remotePort -r" -ForegroundColor Gray
         Write-Host "Press Ctrl+C to stop server and disconnect`n" -ForegroundColor Yellow
         
-        # SSH with port forwarding and run s-open -r
-        ssh -L "${localPort}:127.0.0.1:${remotePort}" $remoteHost -o ServerAliveInterval=60 -t "s-open -p $remotePort -r"
+        # SSH with port forwarding and run s-open -r using full path
+        ssh -L "${localPort}:127.0.0.1:${remotePort}" $remoteHost -o ServerAliveInterval=60 -t "~/work/rdh/shisa/s-open -p $remotePort -r"
         
         return $true
     }
