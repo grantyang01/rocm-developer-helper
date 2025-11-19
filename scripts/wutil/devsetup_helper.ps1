@@ -1,6 +1,7 @@
 . "$PSScriptRoot\tools.ps1"
 . "$PSScriptRoot\git_helper.ps1"
 . "$PSScriptRoot\p4_helper.ps1"
+. "$PSScriptRoot\vs_helper.ps1"
 
 function Install-DevelopmentTools {
     try {
@@ -86,29 +87,7 @@ function Install-DevelopmentTools {
                        -VerifyCommand { Test-Path "C:\Program Files\Docker\Docker\Docker Desktop.exe" }
        
         # visual studio 2022
-        Write-Host "Installing VisualStudio 2022 Community..." -ForegroundColor Cyan
-        
-        # Read configuration
-        $config = Read-Yaml -Path "$PSScriptRoot\config.yaml"
-        
-        # Build Visual Studio component options from config
-        $vsComponents = $config.devtools.visualstudio.components
-        $vsOverrideOptions = ($vsComponents | ForEach-Object { "--add $_" }) -join " "
-        $vsOverrideOptions += " --includeRecommended --quiet --wait"
-
-        InstallPackage -PackageId 'Microsoft.VisualStudio.2022.Community' `
-                       -OverrideOptions $vsOverrideOptions
-
-        # Refresh PATH to make dotnet available immediately
-        $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + `
-                    [System.Environment]::GetEnvironmentVariable("Path", "User")
-
-        # Add source globally
-        Write-Host "Configuring NuGet sources..." -ForegroundColor Cyan
-        $existingSources = dotnet nuget list source 2>$null | Out-String
-        if ($existingSources -notmatch 'nuget\.org') {
-            $result = dotnet nuget add source https://api.nuget.org/v3/index.json --name nuget.org 2>&1
-        }
+        Install-VisualStudio -UnattendedInstall $true
 
         Write-Host "Development tools installation completed!" -ForegroundColor Green
         return $true

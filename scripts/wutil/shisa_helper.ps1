@@ -30,7 +30,7 @@ function Install-ShisaTools {
     Write-Host "Installing Haskell Stack..." -ForegroundColor Cyan
     InstallPackage -PackageId 'commercialhaskell.stack' `
                    -VerifyCommand { Test-Path "C:\Users\$env:USERNAME\AppData\Roaming\local\bin\stack.exe" }
-  
+    
     # Clean Visual Studio plugins build artifacts manually
     Write-Host "Cleaning Visual Studio plugins build artifacts..." -ForegroundColor Cyan
     $pluginsPath = Join-Path $shisaPath "tools\visual_studio_plugins"

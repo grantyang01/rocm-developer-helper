@@ -23,10 +23,6 @@ function Get-ShisaSrc {
 
     Push-Location $shisaRoot
     try {
-        # Sync from Perforce
-        Write-Host "Syncing SHISA from Perforce..." -ForegroundColor Cyan
-        & p4 sync ...
-        
         if ($LASTEXITCODE -ne 0) {
             Write-Error "Failed to sync from Perforce"
             return $false
@@ -108,5 +104,3 @@ function Get-ShisaSrc {
         Pop-Location
     }
 }
-
-Get-ShisaSrc
