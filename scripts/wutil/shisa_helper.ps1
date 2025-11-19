@@ -166,6 +166,14 @@ function Invoke-ShisaSetup {
 }
 
 function Connect-ShisaRemoteServer {
+    param(
+        [Parameter(Mandatory=$false)]
+        [bool]$LaunchServer = $true,
+        
+        [Parameter(Mandatory=$false)]
+        [string]$RemoteHost
+    )
+    
     try {
         $config = Read-Yaml -Path "$PSScriptRoot\config.yaml"
         if (-not $config -or -not $config.SHISA) {
@@ -173,36 +181,55 @@ function Connect-ShisaRemoteServer {
             return $false
         }
         
-        # Check if remote configuration exists
-        if (-not ($config.SHISA.remote)) {
+        # Check if remote configuration exists (optional if RemoteHost is provided)
+        if (-not $RemoteHost -and -not ($config.SHISA.remote)) {
             Write-Error "No remote SHISA configuration found in config.local.yaml"
-            Write-Host "Please configure SHISA.remote section in config.local.yaml" -ForegroundColor Yellow
+            Write-Host "Please configure SHISA.remote section in config.local.yaml or provide -RemoteHost parameter" -ForegroundColor Yellow
             return $false
         }
         
         $remote = $config.SHISA.remote
         
-        # Validate required configuration
-        if (-not $remote.SHISA_REMOTE) {
-            Write-Error "SHISA_REMOTE not configured (username@hostname)"
+        # Use provided RemoteHost or fall back to config
+        if ($RemoteHost) {
+            $remoteHost = $RemoteHost
+        }
+        elseif ($remote -and $remote.SHISA_REMOTE) {
+            $remoteHost = $remote.SHISA_REMOTE
+        }
+        else {
+            Write-Error "SHISA_REMOTE not configured and no -RemoteHost provided"
             return $false
         }
         
-        $remoteHost = $remote.SHISA_REMOTE
-        $remotePort = if ($remote.SHISA_REMOTE_SERVER_PORT) { $remote.SHISA_REMOTE_SERVER_PORT } else { 9339 }
-        $localPort = if ($remote.SHISA_LOCAL_SERVER_PORT) { $remote.SHISA_LOCAL_SERVER_PORT } else { 19339 }
+        # Get port configuration from config (or defaults)
+        $remotePort = if ($remote -and $remote.SHISA_REMOTE_SERVER_PORT) { $remote.SHISA_REMOTE_SERVER_PORT } else { 9346 }
+        $localPort = if ($remote -and $remote.SHISA_LOCAL_SERVER_PORT) { $remote.SHISA_LOCAL_SERVER_PORT } else { 19339 }
         
         Write-Host "`n=== SHISA Remote Debug Server Connection ===" -ForegroundColor Cyan
         Write-Host "Remote: $remoteHost" -ForegroundColor Green
         Write-Host "Port forwarding: localhost:$localPort -> remote:$remotePort" -ForegroundColor Green
         
-        # Launch s-open with server on remote machine and establish SSH tunnel
-        Write-Host "`nStarting SHISA container and server on remote..." -ForegroundColor Cyan
-        Write-Host "Running: ~/work/rdh/shisa/s-open -p $remotePort -r" -ForegroundColor Gray
-        Write-Host "Press Ctrl+C to stop server and disconnect`n" -ForegroundColor Yellow
-        
-        # SSH with port forwarding and run s-open -r using full path
-        ssh -L "${localPort}:127.0.0.1:${remotePort}" $remoteHost -o ServerAliveInterval=60 -t "~/work/rdh/shisa/s-open -p $remotePort -r"
+        # Build SSH command based on whether to launch server
+        if ($LaunchServer) {
+            # Launch s-open with server on remote machine
+            Write-Host "`nStarting SHISA container and server on remote..." -ForegroundColor Cyan
+            Write-Host "Running: ~/work/rdh/shisa/s-open -p $remotePort -r" -ForegroundColor Gray
+            Write-Host "Press Ctrl+C to stop server and disconnect`n" -ForegroundColor Yellow
+            
+            # SSH with port forwarding and run s-open -r using full path
+            ssh -L "${localPort}:127.0.0.1:${remotePort}" $remoteHost -o ServerAliveInterval=60 -t "~/work/rdh/shisa/s-open -p $remotePort -r"
+        }
+        else {
+            # SSH tunnel only - manual server start
+            Write-Host "`nEstablishing SSH tunnel (server not started)..." -ForegroundColor Cyan
+            Write-Host "To start server manually on remote:" -ForegroundColor Yellow
+            Write-Host "  s-open -p $remotePort -r" -ForegroundColor White
+            Write-Host "Press Ctrl+C to disconnect`n" -ForegroundColor Yellow
+            
+            # SSH with port forwarding only
+            ssh -L "${localPort}:127.0.0.1:${remotePort}" $remoteHost -o ServerAliveInterval=60
+        }
         
         return $true
     }

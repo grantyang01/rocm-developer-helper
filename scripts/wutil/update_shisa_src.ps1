@@ -34,6 +34,13 @@ function Get-ShisaSrc {
         
         Write-Host "SHISA synced successfully" -ForegroundColor Green
 
+        # Copy ShisaToolsServer.Linux64 to bin directory
+        $serverLinux = 'tools/visual_studio_plugins/Release/ShisaToolsServer.Linux64'
+        if (Test-Path $serverLinux) {
+            Write-Host "Copying ShisaToolsServer.Linux64 to bin..." -ForegroundColor Cyan
+            Copy-Item $serverLinux -Destination 'bin/ShisaToolsServer.Linux64' -Force
+        }
+
         # List of folders to include
         $folders = @(
             'shader_dev',
@@ -44,6 +51,11 @@ function Get-ShisaSrc {
             'testing',
             'test_apps'
         )
+
+        # Add ShisaToolsServer.Linux64 if it exists in bin
+        if (Test-Path 'bin/ShisaToolsServer.Linux64') {
+            $folders += 'bin/ShisaToolsServer.Linux64'
+        }
 
         # Add .so files from bin directory if they exist
         if (Test-Path 'bin/*.so') {

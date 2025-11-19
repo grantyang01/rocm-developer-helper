@@ -43,3 +43,24 @@ SHISA:
   #   
   #   # Local port for port forwarding (optional, defaults to 19339)
   #   SHISA_LOCAL_SERVER_PORT: 19339
+
+conductor:
+  # Conductor API configuration
+  # To get your API key:
+  #   1. Go to https://conductor.amd.com
+  #   2. Open your profile settings
+  #   3. Generate or copy your API key
+  api_key: "your-conductor-api-key-here"
+  
+  # Reservation defaults
+  reservation:
+    title: "Development"
+    project: "your-project"
+    description: "Development work"
+    allocation_team: "your-team-name"
+    users:
+      - "your-username"
+      - "optional-second-user"
+    systems:
+      - "machine-hostname-1"
+      - "machine-hostname-2"

@@ -7,6 +7,7 @@
 . "$PSScriptRoot\hipsdk_helper.ps1"
 . "$PSScriptRoot\gi_helper.ps1"
 . "$PSScriptRoot\shisa_helper.ps1"
+. "$PSScriptRoot\conductor_helper.ps1"
 
 function Initialize-WindowsDevEnvironment {
 
@@ -140,6 +141,16 @@ function Initialize-WindowsDevEnvironment {
         $success = Install-GpuInterface
         if (-not $success) {
             Write-Warning "GPU Interface build failed, using pre-built binaries from SHISA setup."
+        }
+    }
+
+    # Install Conductor API if enabled
+    if ($config.conductor.enable) {
+        Write-Host "Installing Conductor API..." -ForegroundColor Cyan
+        $success = Install-ConductorApi
+        if (!$success) {
+            Write-Error "Failed to install Conductor API."
+            return $false
         }
     }
 

@@ -102,4 +102,7 @@ SHISA:
   #  gfx10+ example setx TT_OPTS "-nd"
   TT_OPTS: '-nd'
 
+conductor:
+  enable: 1
+  # API key and reserve_it_root configured in config.local.yaml
   
