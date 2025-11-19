@@ -1,0 +1,53 @@
+#!/usr/bin/bash
+# SHISA Update Script
+# Unpacks SHISA source from tar.gz and builds inside Docker container
+#
+# Usage:
+#   s-update [src_file]   # Unpack and build (default: ~/work/shisa_src.tar.gz)
+
+# expose rdh
+rdh_root="$(realpath $0|xargs dirname)/.."
+source ${rdh_root}/activate
+
+# expose self
+bin_dir=$(realpath $0|xargs dirname)
+SELF_TAG="[$(basename $0)]"
+
+# import tools
+source docker-helper
+source s-config
+
+function update_shisa() {
+    # Step 1: Unpack SHISA source
+    log "1. ++++++++++++++++++++ unpack shisa src +++++++++++++++++"
+    local src_file="$1"
+    
+    if [ ! -f "$src_file" ]; then
+        die "SHISA source file not found: $src_file"
+    fi
+    
+    local target="$(realpath "$src_file" | xargs dirname)"/shisa
+    if ! s-unpack-src "$src_file" "$target"; then
+        die "fail: unpack $src_file to $target"
+    fi
+    log "++++++++++++++++++++ unpack shisa src: succ +++++++++++++++++"
+    
+    # Step 2: SHISA setup
+    log "2. ++++++++++++++++++++ shisa update +++++++++++++++++"
+    if ! s-open -s; then
+        die "fail: s-open setup shisa docker"
+    fi
+    log "2. ++++++++++++++++++++ shisa setup: sucess +++++++++++++++++"
+    
+    log "SHISA update completed successfully!"
+    return 0
+}
+
+# run at host
+if is_inside_docker; then
+    die "fail: cannot run inside docker!"
+fi
+
+# update shisa in ./shisa
+update_shisa "./shisa_src.tar.gz"
+
