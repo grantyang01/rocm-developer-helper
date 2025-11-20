@@ -247,8 +247,8 @@ function enable_scripts() {
     find "$dir" -type f \( -name "*.sh" -o -name "*.pl" -o -name "*.py" \) -exec dos2unix {} \;
     # add exec flag
     find "$dir" -type f \( -name "*.sh" -o -name "*.pl" -o -name "*.py" -o -name "*.so" -o -name "*.Linux64" \) -exec chmod +rwx {} \;
-    # add write permission to shader files *.ssp .sp3
-    find "$dir" -type f \( -name "*.ssp" -o -name "*.sp3" \) -exec chmod +rw {} \;
+    # add write permission to shader files *.ssp .sp3 .vcxproj .sln
+    find "$dir" -type f \( -name "*.ssp" -o -name "*.sp3" -o -name "*.vcxproj" -o -name "*.sln" \) -exec chmod +rw {} \;
     return 0
 }
 
