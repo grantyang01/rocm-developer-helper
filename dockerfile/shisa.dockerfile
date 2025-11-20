@@ -9,7 +9,7 @@ RUN test -n "$SP3_ASIC" || (echo "--build-arg SP3_ASIC not set" && false)
 RUN sudo apt-get update \
  && sudo apt-get install -y \
     unzip vim parallel less cmake pkg-config \
-    libgmp-dev libboost-dev libboost-program-options-dev \
+    libgmp-dev libboost-dev libboost-program-options-dev libboost-filesystem-dev \
     libfmt-dev libdw-dev libmkl-dev \
     rocblas-dev gfortran rocprim-dev \
     dotnet-runtime-8.0 \
