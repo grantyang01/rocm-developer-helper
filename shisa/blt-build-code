@@ -1,0 +1,131 @@
+#!/bin/bash
+rdh_root="$(realpath $0|xargs dirname)/.."
+source ${rdh_root}/activate
+
+# expose self
+bin_dir=$(realpath $0|xargs dirname)
+SELF_TAG="[$(basename $0)]"
+
+# import tools
+source cmake-helper
+source docker-helper
+source rd-config
+source s-config
+
+function collect_msg() {
+    local type=$1
+    local log=$2
+    local msg="${@:3}"
+
+    if (( type != 0 )); then
+        echo "${log}    $(format_error $msg)\n"
+    else
+        echo "${log}    $(format_msg $msg)\n"
+    fi
+}
+
+function clone_hipblaslt() {
+    local work_dir="$1"
+    
+    log "Cloning hipBLASLt from rocm-libraries"
+    
+    if [[ -d "${work_dir}/rocm-libraries" ]]; then
+        log "rocm-libraries already exists, skipping clone"
+        return 0
+    fi
+    
+    mkdir -p "${work_dir}"
+    pushd "${work_dir}"
+    
+    if ! git clone --filter=blob:none --sparse https://github.com/ROCm/rocm-libraries.git; then
+        clone_status=-1
+        clone_log=$(collect_msg 1 "$clone_log" "rocm-libraries: clone failed")
+        popd
+        return 1
+    fi
+    
+    cd rocm-libraries
+    
+    if ! git sparse-checkout set projects/hipblaslt shared; then
+        clone_status=-1
+        clone_log=$(collect_msg 1 "$clone_log" "rocm-libraries: sparse-checkout failed")
+        popd
+        return 1
+    fi
+    
+    clone_log=$(collect_msg 0 "$clone_log" "rocm-libraries: clone success")
+    popd
+    return 0
+}
+
+function build_hipblaslt() {
+    local hipblaslt_dir="$1"
+    
+    log "Building hipBLASLt for architectures: ${architecture}"
+    
+    if [[ ! -d "${hipblaslt_dir}" ]]; then
+        build_status=-1
+        build_log=$(collect_msg 1 "$build_log" "hipBLASLt directory not found: ${hipblaslt_dir}")
+        return 1
+    fi
+    
+    pushd "${hipblaslt_dir}"
+    
+    # Build with clients for benchmarking
+    if ! ./install.sh -c -a "${architecture}"; then
+        build_status=-1
+        build_log=$(collect_msg 1 "$build_log" "hipBLASLt: build failed")
+        popd
+        return 1
+    fi
+    
+    build_log=$(collect_msg 0 "$build_log" "hipBLASLt: build success")
+    popd
+    return 0
+}
+
+# run inside docker instance of $instance_name
+if ! is_docker_instance "$instance_name" ; then
+    die "fail: please run it at instance: $instance_name"
+fi
+
+# Configuration
+architecture="gfx942;gfx950"
+work_root="${HOME}/work"
+hipblaslt_src="${work_root}/rocm-libraries/projects/hipblaslt"
+
+log "Starting hipBLASLt build process"
+log "Architecture: ${architecture}"
+log "Work root: ${work_root}"
+
+# Clone
+clone_status=0
+clone_log=""
+clone_hipblaslt "${work_root}"
+
+# Build
+build_status=0
+build_log=""
+if (( clone_status == 0 )); then
+    build_hipblaslt "${hipblaslt_src}"
+else
+    die "Clone failed, skipping build"
+fi
+
+exit 0
+
+# Summary
+log "============================================"
+log "Clone status: $clone_status"
+print_log "$clone_log"
+
+log "Build status: $build_status"
+print_log "$build_log"
+
+if (( clone_status == 0 && build_status == 0 )); then
+    log "$(format_msg '✓ hipBLASLt build completed successfully')"
+    log "Benchmark location: ${hipblaslt_src}/build/release/clients/hipblaslt-bench"
+else
+    die "Build failed. Check logs above."
+fi
+
