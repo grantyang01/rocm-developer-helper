@@ -112,8 +112,6 @@ else
     die "Clone failed, skipping build"
 fi
 
-exit 0
-
 # Summary
 log "============================================"
 log "Clone status: $clone_status"
