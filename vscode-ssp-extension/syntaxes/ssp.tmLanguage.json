@@ -1,0 +1,166 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "SSP/SP3",
+  "scopeName": "source.ssp",
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#preprocessor" },
+    { "include": "#keywords" },
+    { "include": "#functions" },
+    { "include": "#instructions" },
+    { "include": "#registers" },
+    { "include": "#numbers" },
+    { "include": "#strings" },
+    { "include": "#labels" },
+    { "include": "#operators" }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.ssp",
+          "match": "//.*$"
+        },
+        {
+          "name": "comment.block.ssp",
+          "begin": "/\\*",
+          "end": "\\*/|(?=^)"
+        }
+      ]
+    },
+    "preprocessor": {
+      "patterns": [
+        {
+          "name": "keyword.control.directive.include.ssp",
+          "match": "^\\s*(#include|#include_next)\\s+.*$"
+        },
+        {
+          "name": "keyword.control.directive.define.ssp",
+          "match": "^\\s*#(define|undef)\\b"
+        },
+        {
+          "name": "keyword.control.directive.conditional.ssp",
+          "match": "^\\s*#(if|ifdef|ifndef|elif|else|endif)\\b"
+        },
+        {
+          "name": "keyword.control.directive.ssp",
+          "match": "^\\s*#(pragma|error|warning|import|line)\\b"
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.ssp",
+          "match": "\\b(function|shader|var|label|if|elsif|else|for|while|begin|end|return|print|let)\\b"
+        },
+        {
+          "name": "storage.type.ssp",
+          "match": "\\b(int|float|bool|void)\\b"
+        }
+      ]
+    },
+    "functions": {
+      "patterns": [
+        {
+          "name": "entity.name.function.ssp",
+          "match": "\\b([a-zA-Z_][a-zA-Z0-9_]*)\\s*(?=\\()"
+        }
+      ]
+    },
+    "instructions": {
+      "patterns": [
+        {
+          "name": "keyword.other.instruction.virtual.ssp",
+          "match": "\\b(v_add|v_sub|v_mul|v_mac|v_mov|v_cmp|v_and|v_or|v_xor|v_not|v_lshl|v_lshr|v_ashr)\\b"
+        },
+        {
+          "name": "keyword.other.instruction.mfma.ssp",
+          "match": "\\b(v_mfma_f32_32x32x16_bf16|v_mfma_f32_32x32x8_f16|v_mfma_f32_16x16x16_f16|v_mfma_f32_4x4x4_f16)\\b"
+        },
+        {
+          "name": "keyword.other.instruction.scalar.ssp",
+          "match": "\\b(s_add|s_sub|s_mul|s_mov|s_cmp|s_and|s_or|s_xor|s_not|s_lshl|s_lshr|s_ashr|s_waitcnt|s_barrier|s_branch)\\b"
+        },
+        {
+          "name": "keyword.other.instruction.buffer.ssp",
+          "match": "\\b(buffer_load|buffer_store|ds_read|ds_write|flat_load|flat_store|global_load|global_store)\\b"
+        },
+        {
+          "name": "keyword.other.instruction.control.ssp",
+          "match": "\\b(s_endpgm|s_setpc|s_swappc|s_cbranch|s_barrier|s_waitcnt)\\b"
+        }
+      ]
+    },
+    "registers": {
+      "patterns": [
+        {
+          "name": "variable.other.register.vector.ssp",
+          "match": "\\bv[0-9]+\\b"
+        },
+        {
+          "name": "variable.other.register.scalar.ssp",
+          "match": "\\bs[0-9]+\\b"
+        },
+        {
+          "name": "variable.other.register.accumulator.ssp",
+          "match": "\\ba[0-9]+\\b"
+        },
+        {
+          "name": "constant.language.register.special.ssp",
+          "match": "\\b(exec|vcc|scc|m0|flat_scratch|xnack_mask|vccz|execz|scc)\\b"
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.hex.ssp",
+          "match": "\\b0x[0-9a-fA-F]+\\b"
+        },
+        {
+          "name": "constant.numeric.binary.ssp",
+          "match": "\\b0b[01]+\\b"
+        },
+        {
+          "name": "constant.numeric.float.ssp",
+          "match": "\\b[0-9]*\\.[0-9]+\\b"
+        },
+        {
+          "name": "constant.numeric.integer.ssp",
+          "match": "\\b[0-9]+\\b"
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.ssp",
+          "begin": "\"",
+          "end": "\"|$"
+        }
+      ]
+    },
+    "labels": {
+      "patterns": [
+        {
+          "name": "entity.name.label.ssp",
+          "match": "^\\s*[a-zA-Z_][a-zA-Z0-9_]*:"
+        }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        {
+          "name": "keyword.operator.ssp",
+          "match": "[-+*/%!~^&|<=>]+"
+        },
+        {
+          "name": "keyword.operator.range.ssp",
+          "match": "\\.\\."
+        }
+      ]
+    }
+  }
+}
+

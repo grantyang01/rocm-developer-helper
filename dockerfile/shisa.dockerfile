@@ -18,7 +18,8 @@ RUN sudo apt-get update \
     libdata-dump-perl libio-aio-perl libjson-perl libmoose-perl \
     libpadwalker-perl libscalar-list-utils-perl libcoro-perl \
     libexcel-writer-xlsx-perl \
-    haskell-stack
+    haskell-stack \
+    libmsgpack-dev google-mock googletest libgmock-dev
 
 RUN echo y | sudo perl -MCPAN -e 'CPAN::Shell->rematein("notest", "install", $_) for @ARGV' List::MoreUtils File::Slurp List::Compare Proc::ProcessTable Perl::LanguageServer
 

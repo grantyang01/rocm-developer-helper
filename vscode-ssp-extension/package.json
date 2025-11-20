@@ -1,0 +1,63 @@
+{
+  "name": "ssp-language-support",
+  "displayName": "SSP/SP3 Language Support",
+  "description": "Syntax highlighting for SHISA Shader Processor (SSP) and SP3 assembly",
+  "version": "0.1.0",
+  "publisher": "shisa-tools",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "ssp",
+        "aliases": [
+          "SSP",
+          "SHISA Shader Processor",
+          "ssp"
+        ],
+        "extensions": [
+          ".ssp"
+        ],
+        "configuration": "./language-configuration.json",
+        "icon": {
+          "light": "./icons/ssp-icon.png",
+          "dark": "./icons/ssp-icon.png"
+        }
+      },
+      {
+        "id": "sp3",
+        "aliases": [
+          "SP3",
+          "Radeon Assembly",
+          "sp3"
+        ],
+        "extensions": [
+          ".sp3",
+          ".radasm2"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "ssp",
+        "scopeName": "source.ssp",
+        "path": "./syntaxes/ssp.tmLanguage.json"
+      },
+      {
+        "language": "sp3",
+        "scopeName": "source.sp3",
+        "path": "./syntaxes/ssp.tmLanguage.json"
+      }
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-org/vscode-ssp-extension"
+  }
+}
+
