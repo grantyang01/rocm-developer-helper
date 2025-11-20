@@ -157,5 +157,5 @@ function Initialize-WindowsDevEnvironment {
     return $true
 }
 
-Install-GpuInterface
-#Initialize-WindowsDevEnvironment
+# Install-GpuInterface
+Initialize-WindowsDevEnvironment
