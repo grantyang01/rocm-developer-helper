@@ -71,15 +71,23 @@ function build_hipblaslt() {
     
     pushd "${hipblaslt_dir}"
     
-    # Build with clients for benchmarking
-    if ! ./install.sh -c -a "${architecture}"; then
+    # Build release and dependencies
+    if ! ./install.sh -d --keep-build-tmp -a "${architecture}"; then
         build_status=-1
-        build_log=$(collect_msg 1 "$build_log" "hipBLASLt: build failed")
+        build_log=$(collect_msg 1 "$build_log" "hipBLASLt: release build failed")
         popd
         return 1
     fi
     
-    build_log=$(collect_msg 0 "$build_log" "hipBLASLt: build success")
+    # Build debug with clients for benchmarking
+    if ! ./install.sh -g -c -a "${architecture}"; then
+        build_status=-1
+        build_log=$(collect_msg 1 "$build_log" "hipBLASLt: debug build failed")
+        popd
+        return 1
+    fi
+    
+    build_log=$(collect_msg 0 "$build_log" "hipBLASLt: build success (release + debug with clients)")
     popd
     return 0
 }

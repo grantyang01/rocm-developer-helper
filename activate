@@ -6,11 +6,12 @@ RDH_ROOT="$(dirname $(realpath "${BASH_SOURCE[0]}"))"
 scripts_dir=${RDH_ROOT}/scripts
 util_dir=${RDH_ROOT}/scripts/util
 rocm_dev=${RDH_ROOT}/rocm-dev
+rocm=${RDH_ROOT}/rocm
 shisa_dir=${RDH_ROOT}/shisa
 misa_dir=${RDH_ROOT}/misa
 solver_dir=${RDH_ROOT}/solver
 solver_info_dir=${RDH_ROOT}/rocsolver_info/rocm6.4.2-ubuntu22.04-dev
-PATH=${scripts_dir}:${util_dir}:${rocm_dev}:${shisa_dir}:${misa_dir}:${solver_dir}:${solver_info_dir}:$PATH
+PATH=${scripts_dir}:${util_dir}:${rocm_dev}:${rocm}:${shisa_dir}:${misa_dir}:${solver_dir}:${solver_info_dir}:$PATH
 
 # expose git helper functions
 source tools
@@ -18,3 +19,4 @@ source git-cmd-helper
 source cmake-helper
 source docker-helper
 source repo-helper
+source co-helper

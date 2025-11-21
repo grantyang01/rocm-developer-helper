@@ -21,7 +21,7 @@ ENV ROCM_VERSION=${ROCM_VER}
 ENV ROCM_PATH=/opt/rocm-${ROCM_VER}
 ENV ROCM_ROOT=/opt/rocm-${ROCM_VER}
 ENV CMAKE_PREFIX_PATH=/opt/rocm-${ROCM_VER}
-ENV PATH=/opt/rocm-${ROCM_VER}/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
+ENV PATH=/opt/rocm-${ROCM_VER}/bin:/opt/rocm-${ROCM_VER}/lib/llvm/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
 
 # step1: install os packages
 # rocm dev required packages

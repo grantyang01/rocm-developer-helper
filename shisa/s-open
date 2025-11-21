@@ -13,13 +13,14 @@ source s-config
 # Usage helper
 usage() {
     cat << EOF
-Usage: $(basename $0) [-p port] [-s] [-r] [-h]
+Usage: $(basename $0) [-p port] [-s] [-b] [-r] [-h]
 
 Start SHISA Docker container and optionally run setup or debug server.
 
 Options:
   -p PORT    Host port to map to container's 9339 (default: 9346)
   -s         Run s-setup instead of entering container
+  -b         Build hipBLASLt and commit to image
   -r         Run ShisaToolsServer.Linux64 (remote debug server)
   -h         Show this help message and exit
 
@@ -27,6 +28,7 @@ Examples:
   $(basename $0)              Enter container with port 9346 (default)
   $(basename $0) -p 9339      Enter container with port 9339
   $(basename $0) -s           Run setup with port 9346
+  $(basename $0) -b           Build hipBLASLt and save to image
   $(basename $0) -r           Run SHISA Tools Server with port 9346
   $(basename $0) -p 9338 -r   Run SHISA Tools Server with port 9338
 
@@ -37,8 +39,9 @@ EOF
 host_port=9346
 run_setup=0
 run_server=0
+build_hipblaslt=0
 
-while getopts "p:srh" opt; do
+while getopts "p:sbrh" opt; do
     case $opt in
         p)
             host_port=$OPTARG
@@ -48,6 +51,9 @@ while getopts "p:srh" opt; do
             ;;
         s)
             run_setup=1
+            ;;
+        b)
+            build_hipblaslt=1
             ;;
         r)
             run_server=1
@@ -67,9 +73,10 @@ while getopts "p:srh" opt; do
     esac
 done
 
-# Validate: can't run both setup and server
-if (( run_setup == 1 && run_server == 1 )); then
-    die "Cannot specify both -s (setup) and -r (server) at the same time"
+# Validate: can't run multiple modes at once
+modes_count=$(( run_setup + run_server + build_hipblaslt ))
+if (( modes_count > 1 )); then
+    die "Cannot specify multiple modes (-s, -b, -r) at the same time"
 fi
 
 # run at host
@@ -101,7 +108,7 @@ if ! docker run -it `
     die "fail to run: $image_name"
 fi
 
-# enter, run setup, or run server
+# enter, run setup, build hipBLASLt, or run server
 if (( run_server == 1 )); then
     # Run SHISA Tools Server
     log "Starting SHISA Tools Server on 0.0.0.0:9339 (mapped to host ${host_port})"
@@ -113,6 +120,19 @@ elif (( run_setup == 1 )); then
     if ! docker exec -it "$instance_name" bash -c "cd ../shisa;${HOME}/work/rdh/shisa/s-setup"; then
         die "fail: setup shisa"
     fi
+elif (( build_hipblaslt == 1 )); then
+    # Build hipBLASLt
+    log "Building hipBLASLt..."
+    if ! docker exec -it "$instance_name" bash -c "${HOME}/work/rdh/shisa/blt-build-code"; then
+        die "fail: build hipBLASLt"
+    fi
+    
+    # Commit the container with hipBLASLt to image
+    log "Committing container to image: ${image_name}"
+    if ! docker commit "$instance_name" "$image_name"; then
+        die "fail: commit $instance_name to $image_name"
+    fi
+    log "$(format_msg '✓ Successfully built hipBLASLt and saved to image')"
 else
     # default: enter docker
     if ! docker exec -it "$instance_name" bash; then

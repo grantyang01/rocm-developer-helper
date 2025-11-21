@@ -1,0 +1,85 @@
+#!/bin/bash
+# Helper functions for working with .co (code object) files
+
+# Enable rdh
+rdh_root="$(realpath $0|xargs dirname)/.."
+source ${rdh_root}/activate
+
+# Expose self
+SELF_TAG="[$(basename $0)]"
+
+# List architectures bundled in a .co file
+# Usage: list-co <file.co>
+list-co() {
+    local co_file="$1"
+    
+    # Check if file argument provided
+    if [[ -z "$co_file" ]]; then
+        die "No file specified\nUsage: list-co <file.co>"
+    fi
+    
+    # Check if file exists
+    if [[ ! -f "$co_file" ]]; then
+        die "File not found: $co_file"
+    fi
+    
+    # Display file info
+    log "File: $co_file"
+    ls -lh "$co_file"
+    echo ""
+    
+    # Check file type
+    log "File Type:"
+    file "$co_file"
+    echo ""
+    
+    # List bundled architectures
+    log "Bundled Architectures:"
+    if clang-offload-bundler --type=o --list --input="$co_file" 2>/dev/null; then
+        echo ""
+        log "✓ File is bundled (use ub-co to extract)"
+    else
+        die "⚠ Not a bundled file (may already be unbundled ELF)"
+    fi
+}
+
+# Unbundle a .co file to extract ELF for specific architecture
+# Usage: ub-co <input.co> <output.elf> <target>
+# Target should be copied from list-co output, e.g.:
+#   hipv4-amdgcn-amd-amdhsa--gfx950
+ub-co() {
+    local input_co="$1"
+    local output_elf="$2"
+    local target="$3"
+    
+    # Unbundle
+    log "Extracting $target to $output_elf..."
+    if ! clang-offload-bundler --type=o --unbundle \
+        --targets="$target" \
+        --input="$input_co" \
+        --output="$output_elf" 2>&1; then
+        die "Usage: ub-co <input.co> <output.elf> <target>\n <target> can be copied and pasted from list-co output\n"
+    fi
+    
+    # Verify output
+    if [[ ! -f "$output_elf" ]]; then
+        die "Output file not created: $output_elf"
+    fi
+    
+    log "✓ Successfully unbundled"
+    echo ""
+    log "Output file:"
+    ls -lh "$output_elf"
+    echo ""
+    
+    log "File type:"
+    file "$output_elf"
+    echo ""
+    
+    # Count kernels
+    local kernel_count=$(readelf -s "$output_elf" 2>/dev/null | grep FUNC | wc -l)
+    log "Kernel count: $kernel_count"
+    
+    log "✓ Done! Use 'readelf -s $output_elf | grep FUNC' to list kernels"
+}
+
