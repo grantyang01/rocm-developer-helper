@@ -1,0 +1,8 @@
+#!/usr/bin/bash
+rdh_root="$(realpath ${BASH_SOURCE[0]}|xargs dirname)/.."
+source ${rdh_root}/activate
+
+source s-config
+
+# GPU architecture
+architecture="gfx942;gfx950"

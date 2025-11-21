@@ -1,12 +1,5 @@
 #!/bin/bash
-# Helper functions for working with .co (code object) files
-
-# Enable rdh
-rdh_root="$(realpath $0|xargs dirname)/.."
-source ${rdh_root}/activate
-
-# Expose self
-SELF_TAG="[$(basename $0)]"
+SELF_TAG="[$(basename ${BASH_SOURCE[0]})]"
 
 # List architectures bundled in a .co file
 # Usage: list-co <file.co>

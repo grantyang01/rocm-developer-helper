@@ -1,5 +1,5 @@
 #!/bin/bash
-rdh_root="$(realpath $0|xargs dirname)/.."
+rdh_root="$(realpath ${BASH_SOURCE[0]}|xargs dirname)/.."
 source ${rdh_root}/activate
 
 # expose self
@@ -9,8 +9,7 @@ SELF_TAG="[$(basename $0)]"
 # import tools
 source cmake-helper
 source docker-helper
-source rd-config
-source s-config
+source blt-config
 
 function collect_msg() {
     local type=$1
@@ -87,6 +86,13 @@ function build_hipblaslt() {
         return 1
     fi
     
+    # install release as default.
+    if ! cmake_install "./build/release"; then
+        comp_build_status=-1
+        build_log=$(collect_msg 1 "$build_log" "$comp fail: cmake_install ./build/release")
+    fi
+
+
     build_log=$(collect_msg 0 "$build_log" "hipBLASLt: build success (release + debug with clients)")
     popd
     return 0

@@ -10,7 +10,7 @@ SELF_TAG="[$(basename $0)]"
 source cmake-helper
 source docker-helper
 source rd-config
-source sv-config
+source blt-config
 
 function collect_msg() {
     local type=$1

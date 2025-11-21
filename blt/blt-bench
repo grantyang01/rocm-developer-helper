@@ -1,0 +1,12 @@
+#!/usr/bin/bash
+# make tools available
+SELF_TAG="[$(basename ${BASH_SOURCE[0]})]"
+
+source blt-config
+
+# run inside docker instance of "$instance_name"
+if ! is_docker_instance "$instance_name" ; then
+    die "fail: please run it at instance: $instance_name"
+fi
+
+hipblaslt-bench --yaml /SHISA/app_study/hipblaslt_gemm_tf32/case1.yaml
