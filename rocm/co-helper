@@ -73,7 +73,7 @@ ub-co() {
     local kernel_count=$(readelf -s "$output_elf" 2>/dev/null | grep FUNC | wc -l)
     log "Kernel count: $kernel_count"
     
-    log "✓ Done! Use 'readelf -s $output_elf | grep FUNC' to list kernels"
+    log "✓ Done! Use 'readelf -sW $output_elf | grep FUNC' to list kernels"
 }
 
 # Find a kernel by name pattern in multiple .co files
@@ -143,8 +143,8 @@ find-kernel() {
             continue
         fi
         
-        # Search for kernel pattern
-        if readelf -s /tmp/find_kernel_temp.elf 2>/dev/null | grep -q "$kernel_pattern"; then
+        # Search for kernel pattern (use -W for wide output to avoid truncation)
+        if readelf -sW /tmp/find_kernel_temp.elf 2>/dev/null | grep -q "$kernel_pattern"; then
             echo "✓ FOUND!"
             echo ""
             log "=== Found in: $co_file ==="
