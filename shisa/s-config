@@ -29,6 +29,3 @@ TT_OPTS="$(get_tt_opts $GFX_VERSION)"
 if [[ -z "$TT_OPTS" ]]; then
     die "fail: TT_OPTS unknown"
 fi
-
-# GPU architecture
-architecture="gfx942;gfx950"

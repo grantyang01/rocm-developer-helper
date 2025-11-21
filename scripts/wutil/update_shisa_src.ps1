@@ -45,7 +45,8 @@ function Get-ShisaSrc {
             'shader_releases',
             'sp3',
             'testing',
-            'test_apps'
+            'test_apps',
+            'app_study/hipblaslt_gemm_tf32/case*.yaml'
         )
 
         # Add ShisaToolsServer.Linux64 if it exists in bin
