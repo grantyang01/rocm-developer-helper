@@ -83,3 +83,106 @@ ub-co() {
     log "✓ Done! Use 'readelf -s $output_elf | grep FUNC' to list kernels"
 }
 
+# Find a kernel by name pattern in multiple .co files
+# Usage: find-kernel <kernel_pattern> <path_glob>
+# Example: find-kernel "Custom_Cijk_Alik_Bljk_S_MX" "/opt/rocm/lib/hipblaslt/library/*gfx950.co"
+# Note: MUST quote the glob pattern to prevent shell expansion
+find-kernel() {
+    local kernel_pattern="$1"
+    local path_glob="$2"
+    
+    if [[ -z "$kernel_pattern" || -z "$path_glob" ]]; then
+        die "Usage: find-kernel <kernel_pattern> <path_glob>\nExample: find-kernel 'Custom_Cijk_Alik' '/opt/rocm/lib/hipblaslt/library/*gfx950.co'\nNote: MUST quote the glob pattern"
+    fi
+    
+    # Check if glob was expanded by shell (unquoted)
+    if [[ $# -gt 2 ]]; then
+        die "Too many arguments - did you forget to quote the glob pattern?\nUsage: find-kernel 'pattern' '/path/*.co'"
+    fi
+    
+    # Expand glob and collect files
+    local co_files=()
+    for f in $path_glob; do
+        [[ -f "$f" ]] && co_files+=("$f")
+    done
+    
+    local file_count=${#co_files[@]}
+    
+    log "Searching for kernel matching: $kernel_pattern"
+    log "Files to search: $file_count"
+    echo ""
+    
+    local found=0
+    local checked=0
+    
+    for co_file in "${co_files[@]}"; do
+        if [[ ! -f "$co_file" ]]; then
+            continue
+        fi
+        
+        ((checked++))
+        local basename=$(basename "$co_file")
+        
+        # Detect what architecture is bundled in this .co file
+        local bundled=$(clang-offload-bundler --list --type=o --input="$co_file" 2>/dev/null)
+        if [[ -z "$bundled" ]]; then
+            echo "[$checked/$file_count] Skipping $basename (not a valid bundle)"
+            continue
+        fi
+        
+        # Extract the architecture (should only be one)
+        local target=$(echo "$bundled" | grep "hipv4-amdgcn-amd-amdhsa--gfx" | head -1)
+        if [[ -z "$target" ]]; then
+            echo "[$checked/$file_count] Skipping $basename (no GPU target found)"
+            continue
+        fi
+        
+        local arch=$(echo "$target" | grep -oP 'gfx\d+')
+        
+        echo -n "[$checked/$file_count] Checking: $basename ($arch) ... "
+        
+        # Unbundle to temp file
+        if ! clang-offload-bundler --unbundle --type=o \
+            --targets="$target" \
+            --input="$co_file" \
+            --output=/tmp/find_kernel_temp.elf 2>/dev/null; then
+            echo "unbundle failed"
+            continue
+        fi
+        
+        # Search for kernel pattern
+        if readelf -s /tmp/find_kernel_temp.elf 2>/dev/null | grep -q "$kernel_pattern"; then
+            echo "✓ FOUND!"
+            echo ""
+            log "=== Found in: $co_file ==="
+            echo ""
+            
+            # Show matching kernels
+            log "Matching kernels:"
+            readelf -sW /tmp/find_kernel_temp.elf 2>/dev/null | grep "$kernel_pattern" | head -10
+            echo ""
+            
+            # Count total kernels in this file
+            local total_kernels=$(readelf -s /tmp/find_kernel_temp.elf 2>/dev/null | grep -c FUNC)
+            log "Total kernels in this file: $total_kernels"
+            echo ""
+            
+            ((found++))
+        else
+            echo "not found"
+        fi
+    done
+    
+    if [[ $found -eq 0 ]]; then
+        log "Kernel pattern '$kernel_pattern' not found in any .co file"
+        return 1
+    fi
+    
+    log "✓ Found kernel in $found file(s)"
+    
+    # Cleanup
+    rm -f /tmp/find_kernel_temp.elf
+    
+    log "✓ Use 'ub-co' to extract this kernel for further analysis"
+}
+
