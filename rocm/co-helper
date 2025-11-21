@@ -107,6 +107,7 @@ find-kernel() {
     
     local found=0
     local checked=0
+    local -a found_files=()  # Array to store files where kernel was found
     
     for co_file in "${co_files[@]}"; do
         if [[ ! -f "$co_file" ]]; then
@@ -146,37 +147,60 @@ find-kernel() {
         # Search for kernel pattern (use -W for wide output to avoid truncation)
         if readelf -sW /tmp/find_kernel_temp.elf 2>/dev/null | grep -q "$kernel_pattern"; then
             echo "✓ FOUND!"
-            echo ""
-            log "=== Found in: $co_file ==="
-            echo ""
-            
-            # Show matching kernels
-            log "Matching kernels:"
-            readelf -sW /tmp/find_kernel_temp.elf 2>/dev/null | grep "$kernel_pattern" | head -10
-            echo ""
-            
-            # Count total kernels in this file
-            local total_kernels=$(readelf -s /tmp/find_kernel_temp.elf 2>/dev/null | grep -c FUNC)
-            log "Total kernels in this file: $total_kernels"
-            echo ""
-            
             ((found++))
+            found_files+=("$co_file")
         else
             echo "not found"
         fi
     done
     
+    echo ""
+    echo "========================================="
+    log "Search Complete"
+    echo "========================================="
+    
     if [[ $found -eq 0 ]]; then
-        log "Kernel pattern '$kernel_pattern' not found in any .co file"
+        log "❌ Kernel pattern '$kernel_pattern' not found in any .co file"
+        rm -f /tmp/find_kernel_temp.elf
         return 1
     fi
     
-    log "✓ Found kernel in $found file(s)"
+    log "✓ Found kernel in $found file(s):"
+    echo ""
+    
+    # Display detailed results for each found file
+    for co_file in "${found_files[@]}"; do
+        log "=== Found in: $co_file ==="
+        echo ""
+        
+        # Get architecture
+        local bundled=$(clang-offload-bundler --list --type=o --input="$co_file" 2>/dev/null)
+        local target=$(echo "$bundled" | grep "hipv4-amdgcn-amd-amdhsa--gfx" | head -1)
+        
+        # Unbundle to temp file
+        clang-offload-bundler --unbundle --type=o \
+            --targets="$target" \
+            --input="$co_file" \
+            --output=/tmp/find_kernel_temp.elf 2>/dev/null
+        
+        # Show matching kernels (deduplicated)
+        log "Matching symbols:"
+        readelf -sW /tmp/find_kernel_temp.elf 2>/dev/null | \
+            grep "$kernel_pattern" | \
+            awk '{$1=""; print}' | \
+            sort | uniq
+        echo ""
+        
+        # Count total kernels in this file
+        local total_kernels=$(readelf -s /tmp/find_kernel_temp.elf 2>/dev/null | grep -c FUNC)
+        log "Total kernels in this file: $total_kernels"
+        echo ""
+    done
+    
+    log "✓ Use 'ub-co <input.co> <output.elf> <target>' to extract kernel for analysis"
     
     # Cleanup
     rm -f /tmp/find_kernel_temp.elf
-    
-    log "✓ Use 'ub-co' to extract this kernel for further analysis"
 }
 
 
