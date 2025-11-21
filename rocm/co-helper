@@ -120,7 +120,7 @@ find-kernel() {
         # Detect what architecture is bundled in this .co file
         local bundled=$(clang-offload-bundler --list --type=o --input="$co_file" 2>/dev/null)
         if [[ -z "$bundled" ]]; then
-            printf "\r%-120s\r" ""  # Clear line
+            printf "\r\033[K"  # Clear to end of line
             echo "[$checked/$file_count] Skipping $basename (not a valid bundle)"
             continue
         fi
@@ -128,7 +128,7 @@ find-kernel() {
         # Extract the architecture (should only be one)
         local target=$(echo "$bundled" | grep "hipv4-amdgcn-amd-amdhsa--gfx" | head -1)
         if [[ -z "$target" ]]; then
-            printf "\r%-120s\r" ""  # Clear line
+            printf "\r\033[K"  # Clear to end of line
             echo "[$checked/$file_count] Skipping $basename (no GPU target found)"
             continue
         fi
@@ -140,16 +140,16 @@ find-kernel() {
             --targets="$target" \
             --input="$co_file" \
             --output=/tmp/find_kernel_temp.elf 2>/dev/null; then
-            # Use \r to overwrite the line, clear with spaces, then overwrite again
-            printf "\r%-120s\r" ""  # Clear line
+            # Clear line and print error
+            printf "\r\033[K"  # \r=return to start, \033[K=clear to end of line
             echo "[$checked/$file_count] Skipping: $basename ($arch) - unbundle failed"
             continue
         fi
         
         # Search for kernel pattern (use -W for wide output to avoid truncation)
         if readelf -sW /tmp/find_kernel_temp.elf 2>/dev/null | grep -q "$kernel_pattern"; then
-            # Clear the line first, then print FOUND message with newline
-            printf "\r%-120s\r" ""  # Clear line
+            # Clear line and print FOUND message
+            printf "\r\033[K"  # Clear to end of line
             echo "[$checked/$file_count] Checking: $basename ($arch) ... ✓ FOUND!"
             ((found++))
             found_files+=("$co_file")
@@ -160,7 +160,7 @@ find-kernel() {
     done
     
     # Clear any remaining "not found" message and move to new line
-    printf "\r%-120s\r" ""
+    printf "\r\033[K"  # Clear to end of line
     echo ""
     echo "========================================="
     log "Search Complete"
