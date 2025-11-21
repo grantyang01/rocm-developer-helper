@@ -120,6 +120,7 @@ find-kernel() {
         # Detect what architecture is bundled in this .co file
         local bundled=$(clang-offload-bundler --list --type=o --input="$co_file" 2>/dev/null)
         if [[ -z "$bundled" ]]; then
+            printf "\r%-120s\r" ""  # Clear line
             echo "[$checked/$file_count] Skipping $basename (not a valid bundle)"
             continue
         fi
@@ -127,33 +128,39 @@ find-kernel() {
         # Extract the architecture (should only be one)
         local target=$(echo "$bundled" | grep "hipv4-amdgcn-amd-amdhsa--gfx" | head -1)
         if [[ -z "$target" ]]; then
+            printf "\r%-120s\r" ""  # Clear line
             echo "[$checked/$file_count] Skipping $basename (no GPU target found)"
             continue
         fi
         
         local arch=$(echo "$target" | grep -oP 'gfx\d+')
         
-        echo -n "[$checked/$file_count] Checking: $basename ($arch) ... "
-        
         # Unbundle to temp file
         if ! clang-offload-bundler --unbundle --type=o \
             --targets="$target" \
             --input="$co_file" \
             --output=/tmp/find_kernel_temp.elf 2>/dev/null; then
-            echo "unbundle failed"
+            # Use \r to overwrite the line, clear with spaces, then overwrite again
+            printf "\r%-120s\r" ""  # Clear line
+            echo "[$checked/$file_count] Skipping: $basename ($arch) - unbundle failed"
             continue
         fi
         
         # Search for kernel pattern (use -W for wide output to avoid truncation)
         if readelf -sW /tmp/find_kernel_temp.elf 2>/dev/null | grep -q "$kernel_pattern"; then
-            echo "✓ FOUND!"
+            # Clear the line first, then print FOUND message with newline
+            printf "\r%-120s\r" ""  # Clear line
+            echo "[$checked/$file_count] Checking: $basename ($arch) ... ✓ FOUND!"
             ((found++))
             found_files+=("$co_file")
         else
-            echo "not found"
+            # Overwrite the same line (no newline) - will be overwritten by next iteration
+            printf "\r[$checked/$file_count] Checking: $basename ($arch) ... not found"
         fi
     done
     
+    # Clear any remaining "not found" message and move to new line
+    printf "\r%-120s\r" ""
     echo ""
     echo "========================================="
     log "Search Complete"
