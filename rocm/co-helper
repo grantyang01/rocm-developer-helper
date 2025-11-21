@@ -76,6 +76,82 @@ ub-co() {
     log "✓ Done! Use 'readelf -sW $output_elf | grep FUNC' to list kernels"
 }
 
+# Show kernel metadata from an unbundled ELF file
+# Usage: show-kernel-meta <kernel_name> <elf_file>
+# Example: show-kernel-meta "Custom_Cijk_Alik_Bljk_S_MX_B_BIAS_HA_S_SAV_NTD_SK3_UserArgs_MT256x256x32_MI16x16x1_shortname0_gfx950" kernel.elf
+show-kernel-meta() {
+    local kernel_name="$1"
+    local elf_file="$2"
+    
+    if [[ -z "$kernel_name" || -z "$elf_file" ]]; then
+        die "Usage: show-kernel-meta <kernel_name> <elf_file>\nExample: show-kernel-meta 'Custom_Cijk_Alik_...' kernel.elf"
+    fi
+    
+    if [[ ! -f "$elf_file" ]]; then
+        die "File not found: $elf_file"
+    fi
+    
+    # Verify kernel exists
+    if ! readelf -sW "$elf_file" 2>/dev/null | grep -q " FUNC .* $kernel_name$"; then
+        die "Kernel not found in ELF: $kernel_name"
+    fi
+    
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    log "Kernel: $kernel_name"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    
+    # Use llvm-readobj to get full metadata in YAML format
+    local metadata=$(llvm-readobj -n "$elf_file" 2>/dev/null | \
+        awk "/\.name:.*$kernel_name/,/^  - \.name:|^amdhsa\.printf:/" | \
+        head -n -1)
+    
+    if [[ -z "$metadata" ]]; then
+        log "⚠ No metadata found for kernel: $kernel_name"
+        echo ""
+        return
+    fi
+    
+    # Extract key information
+    local kernarg_size=$(echo "$metadata" | grep "kernarg_segment_size:" | awk '{print $2}')
+    local sgpr_count=$(echo "$metadata" | grep "sgpr_count:" | awk '{print $2}')
+    local vgpr_count=$(echo "$metadata" | grep "vgpr_count:" | awk '{print $2}')
+    local lds_size=$(echo "$metadata" | grep "group_segment_fixed_size:" | awk '{print $2}')
+    local wavefront_size=$(echo "$metadata" | grep "wavefront_size:" | awk '{print $2}')
+    local max_workgroup=$(echo "$metadata" | grep "max_flat_workgroup_size:" | awk '{print $2}')
+    
+    # Count arguments
+    local arg_count=$(echo "$metadata" | grep -c "\.offset:")
+    
+    log "Summary:"
+    echo "  Kernel Arguments:      $arg_count (total size: ${kernarg_size:-?} bytes)"
+    echo "  Register Usage:        SGPRs: ${sgpr_count:-?}, VGPRs: ${vgpr_count:-?}"
+    echo "  LDS Memory:            ${lds_size:-0} bytes"
+    echo "  Wavefront Size:        ${wavefront_size:-?}"
+    echo "  Max Workgroup Size:    ${max_workgroup:-?}"
+    echo ""
+    
+    # Show arguments in detail
+    if [[ $arg_count -gt 0 ]]; then
+        log "Kernel Arguments ($arg_count):"
+        echo "$metadata" | grep -A 5 "\.args:" | grep -E "^\s+- \.|\.name:|\.offset:|\.size:|\.value_kind:|\.value_type:" | \
+            awk '
+            /- \./ { if (NR>1) print ""; arg_num++ }
+            /\.name:/ { printf "  [%2d] %-30s", arg_num, $2 }
+            /\.offset:/ { printf " offset=%3s", $2 }
+            /\.size:/ { printf " size=%2s", $2 }
+            /\.value_kind:/ { kind=$2 }
+            /\.value_type:/ { printf " %-20s (%s)\n", $2, kind; kind="" }
+            END { if (kind != "") printf "\n" }
+            ' arg_num=0
+        echo ""
+    fi
+    
+    log "Full Metadata (YAML):"
+    echo "$metadata"
+    echo ""
+}
+
 # Find a kernel by name pattern in multiple .co files
 # Usage: find-kernel <kernel_pattern> <path_glob>
 # Example: find-kernel "Custom_Cijk_Alik_Bljk_S_MX" "/opt/rocm/lib/hipblaslt/library/*gfx950.co"
@@ -202,9 +278,22 @@ find-kernel() {
         local total_kernels=$(readelf -s /tmp/find_kernel_temp.elf 2>/dev/null | grep -c FUNC)
         log "Total kernels in this file: $total_kernels"
         echo ""
+        
+        # Get the actual FUNC kernel names (not .kd descriptors)
+        local func_kernels=$(readelf -sW /tmp/find_kernel_temp.elf 2>/dev/null | \
+            grep " FUNC " | grep "$kernel_pattern" | awk '{print $NF}' | sort | uniq)
+        
+        # Show detailed metadata for each matching FUNC kernel
+        log "Extracting metadata..."
+        echo ""
+        while IFS= read -r func_name; do
+            [[ -z "$func_name" ]] && continue
+            show-kernel-meta "$func_name" "/tmp/find_kernel_temp.elf"
+        done <<< "$func_kernels"
     done
     
-    log "✓ Use 'ub-co <input.co> <output.elf> <target>' to extract kernel for analysis"
+    log "✓ To extract kernel: ub-co <input.co> <output.elf> <target>"
+    log "✓ To view metadata again: show-kernel-meta '<kernel_name>' <elf_file>"
     
     # Cleanup
     rm -f /tmp/find_kernel_temp.elf
