@@ -72,7 +72,7 @@ function build_hipblaslt() {
     pushd "${hipblaslt_dir}"
     
     # Build release and dependencies
-    if ! ./install.sh -d --keep-build-tmp -a "${architecture}"; then
+    if ! ./install.sh -d --keep-build-tmp -c -a "${architecture}"; then
         build_status=-1
         build_log=$(collect_msg 1 "$build_log" "hipBLASLt: release build failed")
         popd
@@ -80,7 +80,7 @@ function build_hipblaslt() {
     fi
     
     # Build debug with clients for benchmarking
-    if ! ./install.sh -g -c -a "${architecture}"; then
+    if ! ./install.sh -g --keep-build-tmp -c -a "${architecture}"; then
         build_status=-1
         build_log=$(collect_msg 1 "$build_log" "hipBLASLt: debug build failed")
         popd
@@ -98,7 +98,6 @@ if ! is_docker_instance "$instance_name" ; then
 fi
 
 # Configuration
-architecture="gfx942;gfx950"
 work_root="${HOME}/work"
 hipblaslt_src="${work_root}/rocm-libraries/projects/hipblaslt"
 
