@@ -22,7 +22,7 @@ if pgrep -x sshd > /dev/null 2>&1; then
     # Show connection info
     container_ip=$(hostname -I | awk '{print $1}')
     log "Container IP: $container_ip"
-    log "Connect from host with: ssh $USER@$container_ip"
+    log "Connect from host with: ssh $(whoami)@$container_ip"
 else
     die "Failed to start SSH server"
 fi
