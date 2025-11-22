@@ -1,10 +1,7 @@
 #!/usr/bin/bash
-# Start SSH server inside the container
-
 source docker-helper
 source tools
 
-# identify self
 SELF_TAG="[$(basename ${BASH_SOURCE[0]})]"
 
 # Must run inside docker
@@ -22,7 +19,7 @@ if pgrep -x sshd > /dev/null 2>&1; then
     # Show connection info
     container_ip=$(hostname -I | awk '{print $1}')
     log "Container IP: $container_ip"
-    log "Connect from host with: ssh $(whoami)@$container_ip"
+    log "Connect from host with: ssh $(whoami)@$container_ip -i <private_key>"
 else
     die "Failed to start SSH server"
 fi
