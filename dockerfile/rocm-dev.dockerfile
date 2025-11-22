@@ -81,6 +81,32 @@ RUN apt-get update -y && \
     fi && \   
     apt-get clean
 
+# SSH server for remote development (required for connecting to container via SSH)
+# After container starts, SSH needs to be started manually: sudo /usr/sbin/sshd
+# This enables remote access from IDEs (VSCode/Cursor) and SSH clients
+#
+# Example ~/.ssh/config for connecting from remote machine:
+#   Host host
+#       HostName <host_machine_to_launch_container>
+#       User <username>
+#   
+#   Host mycontainer
+#       HostName <container_ip_in_host>  # Get at host machine with: docker inspect <container> -f '{{.NetworkSettings.IPAddress}}'
+#       User <username>
+#       Port 22
+#       ProxyJump host
+#
+# Then connect with: ssh mycontainer (or use Remote-SSH in VSCode/Cursor)
+RUN apt-get update -y && \
+    apt-get install -y openssh-server && \
+    mkdir -p /run/sshd && \
+    sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
+    sed -i 's/PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
+    apt-get clean
+
+# Expose SSH port
+EXPOSE 22
+
 # step 2: setup drivers
 # generate amdgpu-build.list, sample:
 RUN echo "Adding amdgpu-build.list: ${GFX_BUILD} ${UBUNTU_CODENAME}" && \

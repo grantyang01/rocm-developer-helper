@@ -171,6 +171,22 @@ function close_container() {
     return 0
 }
 
+function get_container_ip() {
+    local container_name="$1"
+    
+    if [ -z "$container_name" ]; then
+        echo "Usage: get_container_ip <container_name>" >&2
+        return 1
+    fi
+    
+    if ! is_container_runing "$container_name"; then
+        echo "Error: Container '$container_name' is not running" >&2
+        return 1
+    fi
+    
+    docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$container_name"
+}
+
 function remove_dangling() {
     docker rmi $(docker images -f "dangling=true" -q)
 }

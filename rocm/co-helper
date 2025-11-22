@@ -102,12 +102,38 @@ show-kernel-meta() {
     echo ""
     
     # Use llvm-readobj to get full metadata in YAML format
-    local metadata=$(llvm-readobj -n "$elf_file" 2>/dev/null | \
-        awk "/\.name:.*$kernel_name/,/^  - \.name:|^amdhsa\.printf:/" | \
-        head -n -1)
+    # Save to temp file for processing
+    local temp_meta="/tmp/show_kernel_meta_$$.txt"
+    llvm-readobj -n "$elf_file" > "$temp_meta" 2>/dev/null
+    
+    # Find the line with our kernel's .name: field
+    local name_line=$(grep -n "^    \.name:[[:space:]]*$kernel_name\$" "$temp_meta" | head -1 | cut -d: -f1)
+    
+    if [[ -z "$name_line" ]]; then
+        rm -f "$temp_meta"
+        log "⚠ No metadata found for kernel: $kernel_name"
+        echo ""
+        return
+    fi
+    
+    # Find start: look backwards for "  - .args:" (kernel entry start)
+    local start_line=$(head -n $((name_line - 1)) "$temp_meta" | tac | grep -n "^  - \.args:" | head -1 | cut -d: -f1)
+    start_line=$((name_line - start_line))
+    
+    # Find end: look forwards for next "  - .args:" or "amdhsa.version:"
+    local next_kernel=$(tail -n +$((name_line + 1)) "$temp_meta" | grep -n "^  - \.args:\|^amdhsa\.version:" | head -1 | cut -d: -f1)
+    if [[ -n "$next_kernel" ]]; then
+        local end_line=$((name_line + next_kernel - 1))
+    else
+        local end_line=$(wc -l < "$temp_meta")
+    fi
+    
+    # Extract the metadata
+    local metadata=$(sed -n "${start_line},${end_line}p" "$temp_meta")
+    rm -f "$temp_meta"
     
     if [[ -z "$metadata" ]]; then
-        log "⚠ No metadata found for kernel: $kernel_name"
+        log "⚠ Failed to extract metadata"
         echo ""
         return
     fi
@@ -134,16 +160,28 @@ show-kernel-meta() {
     # Show arguments in detail
     if [[ $arg_count -gt 0 ]]; then
         log "Kernel Arguments ($arg_count):"
-        echo "$metadata" | grep -A 5 "\.args:" | grep -E "^\s+- \.|\.name:|\.offset:|\.size:|\.value_kind:|\.value_type:" | \
-            awk '
-            /- \./ { if (NR>1) print ""; arg_num++ }
-            /\.name:/ { printf "  [%2d] %-30s", arg_num, $2 }
-            /\.offset:/ { printf " offset=%3s", $2 }
-            /\.size:/ { printf " size=%2s", $2 }
-            /\.value_kind:/ { kind=$2 }
-            /\.value_type:/ { printf " %-20s (%s)\n", $2, kind; kind="" }
-            END { if (kind != "") printf "\n" }
-            ' arg_num=0
+        echo "$metadata" | awk '
+        BEGIN { arg_num = 0; name = ""; offset = ""; size = ""; vtype = ""; kind = "" }
+        /^      - \./ { 
+            # New argument - print previous if exists
+            if (arg_num > 0) {
+                printf "  [%2d] %-30s offset=%3s size=%2s %-15s (%s)\n", arg_num, name, offset, size, vtype, kind
+            }
+            arg_num++
+            name = ""; offset = ""; size = ""; vtype = ""; kind = ""
+        }
+        /^        \.name:/ { name = $2 }
+        /^        \.offset:/ { offset = $2 }
+        /^        \.size:/ { size = $2 }
+        /^        \.value_type:/ { vtype = $2 }
+        /^        \.value_kind:/ { kind = $2 }
+        END { 
+            # Print last argument
+            if (arg_num > 0) {
+                printf "  [%2d] %-30s offset=%3s size=%2s %-15s (%s)\n", arg_num, name, offset, size, vtype, kind
+            }
+        }
+        '
         echo ""
     fi
     
@@ -283,9 +321,17 @@ find-kernel() {
         local func_kernels=$(readelf -sW /tmp/find_kernel_temp.elf 2>/dev/null | \
             grep " FUNC " | grep "$kernel_pattern" | awk '{print $NF}' | sort | uniq)
         
+        # Count how many unique FUNC kernels match
+        local func_count=$(echo "$func_kernels" | grep -c .)
+        
         # Show detailed metadata for each matching FUNC kernel
-        log "Extracting metadata..."
+        if [[ $func_count -eq 1 ]]; then
+            log "Extracting metadata for 1 matching kernel..."
+        else
+            log "Extracting metadata for $func_count matching kernels..."
+        fi
         echo ""
+        
         while IFS= read -r func_name; do
             [[ -z "$func_name" ]] && continue
             show-kernel-meta "$func_name" "/tmp/find_kernel_temp.elf"
