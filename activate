@@ -20,4 +20,4 @@ source git-cmd-helper
 source cmake-helper
 source docker-helper
 source repo-helper
-# source co-helper
+source co-helper

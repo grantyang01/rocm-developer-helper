@@ -8,12 +8,14 @@ list-co() {
     
     # Check if file argument provided
     if [[ -z "$co_file" ]]; then
-        die "No file specified\nUsage: list-co <file.co>"
+        log "No file specified\nUsage: list-co <file.co>"
+        return 1
     fi
     
     # Check if file exists
     if [[ ! -f "$co_file" ]]; then
-        die "File not found: $co_file"
+        log "File not found: $co_file"
+        return 1
     fi
     
     # Display file info
@@ -32,7 +34,8 @@ list-co() {
         echo ""
         log "✓ File is bundled (use ub-co to extract)"
     else
-        die "⚠ Not a bundled file (may already be unbundled ELF)"
+        log "⚠ Not a bundled file (may already be unbundled ELF)"
+        return 1
     fi
 }
 
@@ -51,12 +54,14 @@ ub-co() {
         --targets="$target" \
         --input="$input_co" \
         --output="$output_elf" 2>&1; then
-        die "Usage: ub-co <input.co> <output.elf> <target>\n <target> can be copied and pasted from list-co output\n"
+        log "Usage: ub-co <input.co> <output.elf> <target>\n$1\n$2\n$3\n"
+        return 1
     fi
     
     # Verify output
     if [[ ! -f "$output_elf" ]]; then
-        die "Output file not created: $output_elf"
+        log "Output file not created: $output_elf"
+        return 1
     fi
     
     log "✓ Successfully unbundled"
@@ -84,16 +89,19 @@ show-kernel-meta() {
     local elf_file="$2"
     
     if [[ -z "$kernel_name" || -z "$elf_file" ]]; then
-        die "Usage: show-kernel-meta <kernel_name> <elf_file>\nExample: show-kernel-meta 'Custom_Cijk_Alik_...' kernel.elf"
+        log "Usage: show-kernel-meta <kernel_name> <elf_file>\nExample: show-kernel-meta 'Custom_Cijk_Alik_...' kernel.elf\n$1\n$2\n"
+        return 1
     fi
     
     if [[ ! -f "$elf_file" ]]; then
-        die "File not found: $elf_file"
+        log "File not found: $elf_file"
+        return 1
     fi
     
     # Verify kernel exists
     if ! readelf -sW "$elf_file" 2>/dev/null | grep -q " FUNC .* $kernel_name$"; then
-        die "Kernel not found in ELF: $kernel_name"
+        log "Kernel not found in ELF: $kernel_name"
+        return 1
     fi
     
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -116,12 +124,13 @@ show-kernel-meta() {
         return
     fi
     
-    # Find start: look backwards for "  - .args:" (kernel entry start)
-    local start_line=$(head -n $((name_line - 1)) "$temp_meta" | tac | grep -n "^  - \.args:" | head -1 | cut -d: -f1)
+    # Find start: look backwards for kernel entry marker
+    # Try "  - .args:" first (for .co bundles), then "  - .agpr_count:" (for standalone .hsaco)
+    local start_line=$(head -n $((name_line - 1)) "$temp_meta" | tac | grep -n "^  - \.args:\|^  - \.agpr_count:" | head -1 | cut -d: -f1)
     start_line=$((name_line - start_line))
     
-    # Find end: look forwards for next "  - .args:" or "amdhsa.version:"
-    local next_kernel=$(tail -n +$((name_line + 1)) "$temp_meta" | grep -n "^  - \.args:\|^amdhsa\.version:" | head -1 | cut -d: -f1)
+    # Find end: look forwards for next kernel marker or end marker
+    local next_kernel=$(tail -n +$((name_line + 1)) "$temp_meta" | grep -n "^  - \.args:\|^  - \.agpr_count:\|^amdhsa\.version:\|^amdhsa\.target:" | head -1 | cut -d: -f1)
     if [[ -n "$next_kernel" ]]; then
         local end_line=$((name_line + next_kernel - 1))
     else
@@ -199,12 +208,14 @@ find-kernel() {
     local path_glob="$2"
     
     if [[ -z "$kernel_pattern" || -z "$path_glob" ]]; then
-        die "Usage: find-kernel <kernel_pattern> <path_glob>\nExample: find-kernel 'Custom_Cijk_Alik' '/opt/rocm/lib/hipblaslt/library/*gfx950.co'\nNote: MUST quote the glob pattern"
+        log "Usage: find-kernel <kernel_pattern> <path_glob>\nExample: find-kernel 'Custom_Cijk_Alik' '/opt/rocm/lib/hipblaslt/library/*gfx950.co'\nNote: MUST quote the glob pattern"
+        return 1
     fi
     
     # Check if glob was expanded by shell (unquoted)
     if [[ $# -gt 2 ]]; then
-        die "Too many arguments - did you forget to quote the glob pattern?\nUsage: find-kernel 'pattern' '/path/*.co'"
+        log "Too many arguments - did you forget to quote the glob pattern?\nUsage: find-kernel 'pattern' '/path/*.co'"
+        return 1
     fi
     
     # Expand glob and collect files
