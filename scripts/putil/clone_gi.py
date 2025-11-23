@@ -57,15 +57,6 @@ def clone_gi(target, gi_branch=None):
     pal_navi = target / "pal_navi"
     run(["git", "apply", "../0001-PAL_CLIENT_SHISA.pal_navi.patch"], cwd=pal_navi)
     
-    # Fix rapidjson syntax
-    rapidjson = pal_navi / "shared/devdriver/third_party/rapidjson/include/rapidjson/document.h"
-    if rapidjson.exists():
-        try:
-            text = rapidjson.read_text()
-            rapidjson.write_text(text.replace("const SizeType length;", "SizeType length;"))
-        except Exception as e:
-            raise RuntimeError(f"Failed to fix rapidjson syntax: {e}")
-    
     # Apply pal_vega patch
     pal_vega = target / "pal_vega"
     run(["git", "apply", "../0001-PAL_CLIENT_SHISA.pal_vega.patch"], cwd=pal_vega)
@@ -82,6 +73,19 @@ def clone_gi(target, gi_branch=None):
     
     # Update all submodules recursively
     run(["git", "submodule", "update", "--init", "--recursive"], cwd=target)
+    
+    # Patch rapidjson AFTER submodules are initialized
+    rapidjson = pal_navi / "shared/devdriver/third_party/rapidjson/include/rapidjson/document.h"
+    if rapidjson.exists():
+        try:
+            text = rapidjson.read_text()
+            text = text.replace("const SizeType length;", "SizeType length;")
+            rapidjson.write_text(text)
+            print(f"✓ Patched rapidjson document.h")
+        except Exception as e:
+            print(f"Warning: Failed to patch rapidjson: {e}")
+    else:
+        print(f"Warning: rapidjson not found at {rapidjson}")
     
     print(f"✓ GPU Interface cloned successfully: {target}")
 
