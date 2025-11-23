@@ -43,6 +43,11 @@ RUN apt-get update -y && \
     apt-get install -y build-essential gfortran cmake-format clang-format locales-all && \
     apt-get clean
 
+# Cursor IDE requires clangd for cross-reference C++ code
+RUN apt-get update -y && \
+    apt-get install -y clangd && \
+    apt-get clean
+
 # clr
 #RUN python3 -m pip install cxxheaderparser
 
@@ -82,21 +87,25 @@ RUN apt-get update -y && \
     apt-get clean
 
 # SSH server for remote development (required for connecting to container via SSH)
-# After container starts, SSH needs to be started manually: sudo /usr/sbin/sshd
-# This enables remote access from IDEs (VSCode/Cursor) and SSH clients
+# Purpose: 
+# 1. cursor IDE doesn't have the option of "connect to running container" as vscode does
+# 2. ssh server is required in container for cursor IDE to connect to running container
+# 3. vscode can also make use of ssh server in container for remote development
 #
-# Example ~/.ssh/config for connecting from remote machine:
-#   Host host
-#       HostName <host_machine_to_launch_container>
+# How to use:
+#    connect from <host machine 1> to <container> at <host machine 2>:
+# 1. After container starts in <host machine 2>, SSH needs to be started manually: sudo /usr/sbin/sshd or rd-ssh-server
+# 2. config example in <host machine 1>(~/.ssh/config):
+#   Host host_machine_2
+#       HostName <host_machine_2_to_launch_container>
 #       User <username>
 #   
 #   Host mycontainer
-#       HostName <container_ip_in_host>  # Get at host machine with: docker inspect <container> -f '{{.NetworkSettings.IPAddress}}'
+#       HostName <container_ip_in_host_machine_2>  # Get at host machine with: docker inspect <container> -f '{{.NetworkSettings.IPAddress}}'
 #       User <username>
 #       Port 22
-#       ProxyJump host
-#
-# Then connect with: ssh mycontainer (or use Remote-SSH in VSCode/Cursor)
+#       ProxyJump host_machine_2
+#  3. connect with: ssh mycontainer or use Remote-SSH in Cursor/VSCode
 RUN apt-get update -y && \
     apt-get install -y openssh-server && \
     mkdir -p /run/sshd && \
