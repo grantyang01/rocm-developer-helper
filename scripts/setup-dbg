@@ -8,6 +8,8 @@ rdh_root="$(realpath ${BASH_SOURCE[0]}|xargs dirname)/.."
 # Expose self
 SELF_TAG="[$(basename ${BASH_SOURCE[0]})]"
 
+source tools
+
 # Setup .gdbinit
 setup_gdbinit() {
     local source="${rdh_root}/config/gdbinit"
