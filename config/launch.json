@@ -1,0 +1,320 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "bashdb",
+            "request": "launch",
+            "name": "Bash-Debug (shisa)",
+            "program": "${file}",
+            "cwd": "${workspaceFolder}/test",
+            "args": [
+                // "-s"
+                //"-p", "."
+            ],
+        },
+        
+        {
+            "name": "(rocgdb) Launch - gemm_test",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/home/gryang/work/shisa/binDebug/gemm_test",
+            "args": [
+                "--shader_path", "/home/gryang/work/shisa/app_study/hipblaslt_gemm_tf32/case1_950.elf",
+                "-M", "2048",
+                "-N", "8192",
+                "-K", "5640",
+                "--n_groups", "256",
+                "--alpha", "1.0",
+                "--beta", "0.0",
+                "--a_col", "1",
+                "--b_col", "0",
+                "--check", "0",
+                "--repeat", "1"
+            ],
+            "stopAtEntry": true,
+            "cwd": "/home/gryang/work/shisa/binDebug",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "/opt/rocm/bin/rocgdb"
+        },
+        
+        {
+            "name": "(gdb) Launch - hipblaslt-bench",
+            "type": "cppdbg",
+            "request": "launch",
+            
+            "program": "/home/gryang/work/rocm-libraries/projects/hipblaslt/build/debug/clients/hipblaslt-bench",
+            "args": [
+                "--yaml",
+                "/home/gryang/work/shisa/app_study/hipblaslt_gemm_tf32/case1.yaml"
+            ],
+            
+            "environment": [],
+            "stopAtEntry": true,
+            "cwd": "/home/gryang/work/",
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/rocgdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Enable GDB demangling",
+                    "text": "set print demangle on",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set print pretty on",
+                    "text": "set print pretty on",
+                    "ignoreFailures": true
+                }            
+            ]
+        },
+
+        {
+            "name": "(gdb) Launch - rocsolver-bench",
+            "type": "cppdbg",
+            "request": "launch",
+
+            // orgin command:
+            // rocsolver-bench -f syevd -n 8192 --evect V --iters 1 --perf 1 -r s
+            "program": "/home/gryang/work/solver/rocsolver/build/debug/clients/staging/rocsolver-bench",
+            "args": [
+                "-f","syevd",
+                // "-n","8192",
+                "-n","1024",
+                "--evect","V",
+                "--iters","1",
+                "--perf","1",
+                "-r","s"
+            ],
+
+            "environment": [
+            ],
+
+            "stopAtEntry": true,
+            "cwd": "/home/gryang/work/",
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/rocgdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Enable GDB demangling",
+                    "text": "set print demangle on",
+                    "ignoreFailures": true
+                }
+            ],
+        },
+
+
+        {
+            "name": "(gdb) Launch - misa_conv_test",
+            "type": "cppdbg",
+            "request": "launch",
+
+            // orgin command:
+            // /SHISA/bin/misa_conv_test --interface misa --run_conv_from_dump 1 -k1 -t1004  --device 0 --misasp3 /home/gryang/work/misa/workdir-fix_wrw_applicability/misa_new_sp3/ --dir bwd --type fp32 --argdump /home/gryang/work/misa/workdir-fix_wrw_applicability/results_partial/dump_dir/dump0001/igemm_bwd_gtcx35_nhwc_fp32_bx0_ex1_bt128x64x8_wt32x32x2_ws1x1_wr2x1_ta1x1x4x1_1x8x1x32_tb1x1x2x1_1x8x1x32_mh_me_gkgs.gks1.dump  -n 500 --ms_limit -1
+            "program": "/SHISA/binDebug/misa_conv_test",
+            "args": [
+                "--interface","misa",
+                "--run_conv_from_dump","1",
+                "-k1",
+                "-t1004",
+                "--device","0",
+                "--misasp3","/home/gryang/work/misa/workdir-fix_wrw_applicability/misa_new_sp3/",
+                "--dir","bwd",
+                "--type","fp32",
+                "--argdump","/home/gryang/work/misa/workdir-fix_wrw_applicability/results_partial/dump_dir/dump0001/igemm_bwd_gtcx35_nhwc_fp32_bx0_ex1_bt128x64x8_wt32x32x2_ws1x1_wr2x1_ta1x1x4x1_1x8x1x32_tb1x1x2x1_1x8x1x32_mh_me_gkgs.gks1.dump",
+                "-n","100",
+                "--ms_limit", "-1"
+            ],
+
+            "environment": [
+                {
+                    "name": "LD_LIBRARY_PATH",
+                    "value": "/SHISA/binDebug:/SHISA/bin:/opt/rocm/lib/llvm/lib"
+                },
+
+                {
+                    "name": "SHISA_HSA_PM4_MODE",
+                    "value": "1"
+                },
+                
+                {
+                    "name": "SHISA_HSA_TIMEOUT_SECONDS",
+                    "value": "1"
+                },
+            ],
+
+            "stopAtEntry": true,
+            "cwd": "/home/gryang/work/misa/workdir-fix_wrw_applicability/test/",
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/rocgdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+
+        // ShaderProcessor-exe - -asic MI350  -emit sp3
+        {
+            "name": "(gdb) Launch - shader_build",
+            "type": "cppdbg",
+            "request": "launch",
+
+            // shader_build error.ssp -a MI350 --elf-abi HSA --elf-out error.elf
+            "program": "/SHISA/binDebug/shader_build",
+            "args": [
+                "error.ssp",
+                "-a","MI350",
+                "--elf-abi","HSA",
+                "--elf-out","error.elf",
+                "--asm-out","error.sp3",
+                "--log-out","error.log"
+            ],
+
+            "environment": [
+                {
+                    "name": "LD_LIBRARY_PATH",
+                    "value": "/SHISA/binDebug:/SHISA/bin:/opt/rocm/lib/llvm/lib"
+                }
+            ],
+
+            "stopAtEntry": true,
+            "cwd": "/home/gryang/work/misa/workdir-fix_wrw_applicability/test/",
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/rocgdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+
+        // path /home/gryang/work/misa/workdir-fix_wrw_applicability/misa_new/wrw_bf16
+        // IGEMM_DUMPDIR_ALL=/tmp/DUMPbVh973 ./conv_driver.exe convbfp16 -F 4 -V 0 -t 1 --in_layout NHWC --fil_layout NHWC --out_layout NHWC -m conv --conv_stride_h 1 --conv_stride_w 1 --dilation_h 2 --dilation_w 2 --pad_h 0 --pad_w 1 -H 32 -W 32 -c 2 -k 64 -n 32 -x 3 -y 3
+        {
+            "name": "(gdb) Launch - conv_driver",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/home/gryang/work/misa/workdir-fix_wrw_applicability/misa_new/wrw_bf16/conv_driver.exe",
+            "args": [
+                "convbfp16",
+                "-F","4",
+                "-V","0",
+                "-t","1",
+                "--in_layout","NHWC",
+                "--fil_layout","NHWC",
+                "--out_layout","NHWC",
+                "-m","conv",
+                "--conv_stride_h","1",
+                "--conv_stride_w","1",
+                "--dilation_h","2",
+                "--dilation_w","2",
+                "--pad_h","0",
+                "--pad_w","1",
+                "-H","32",
+                "-W","32",
+                "-c","2",
+                "-k","64",
+                "-n","32",
+                "-x","3",
+                "-y","3"
+            ],
+
+            "environment": [
+                {
+                    "name": "LD_LIBRARY_PATH",
+                    "value": "/SHISA/binDebug:/SHISA/bin:/opt/rocm/lib/llvm/lib"
+                },
+                {
+                    "name": "IGEMM_DUMPDIR_ALL",
+                    "value": "/tmp/DUMPbVh973"
+                }
+            ],
+
+            "stopAtEntry": true,
+            "cwd": "/home/gryang/work/misa/workdir-fix_wrw_applicability/misa_new/wrw_bf16/",
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/rocgdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+
+        {
+            "type": "perl",
+            "request": "launch",
+            "name": "Perl-Debug - run_misa_cases",
+            "program": "/home/gryang/work/il/SHISA_stg/test_apps/misa_conv_test/scripts/run_misa_cases.pl",
+            "cwd": "/home/gryang/work/misa",
+            "stopOnEntry": true,
+            "reloadModules": true,
+            "args": [
+                "-v",
+                "-misa","/home/gryang/work/misa/workdir-fix_wrw_applicability/misa_new/",
+                "-o","/home/gryang/work/misa/workdir-fix_wrw_applicability/results_base/res_page_wrw_bf16_part_004_misa_cases_random1k.txt",
+                "-lr","/SHISA/ref_cache",
+                "-sr","/SHISA/ref_cache",
+                "--","/home/gryang/work/il/SHISA_stg/testing/misa_test/part_004_misa_cases_random1k.txt",
+                "-k1",
+                "-t1004",
+                "--device","0",
+                "--misasp3","/home/gryang/work/misa/workdir-fix_wrw_applicability/misa_new_sp3/",
+                "--dir","wrw",
+                "--type","bf16",
+                "--dbg_force_alloc_granularity_misa","2097152",
+                "--dbg","0"
+            ]
+        },
+    ]
+}
