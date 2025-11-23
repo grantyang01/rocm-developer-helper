@@ -1,0 +1,59 @@
+#!/bin/bash
+# Setup GDB configuration from rdh repo
+# Creates symlink from ~/.gdbinit to rdh/config/gdbinit
+
+# Enable rdh
+rdh_root="$(realpath ${BASH_SOURCE[0]}|xargs dirname)/.."
+
+# Expose self
+SELF_TAG="[$(basename ${BASH_SOURCE[0]})]"
+
+# Setup .gdbinit
+setup_gdbinit() {
+    local source="${rdh_root}/config/gdbinit"
+    local target="${HOME}/.gdbinit"
+    
+    if [[ ! -f "$source" ]]; then
+        log "Error: Source file not found: $source"
+        return 1
+    fi
+    
+    # Check if target already exists
+    if [[ -L "$target" ]]; then
+        local current_link=$(readlink "$target")
+        if [[ "$current_link" == "$source" ]]; then
+            log "✓ .gdbinit symlink already correct"
+            return 0
+        else
+            log "⚠ .gdbinit is a symlink to: $current_link"
+            log "  Updating to point to: $source"
+            rm "$target"
+        fi
+    elif [[ -f "$target" ]]; then
+        log "⚠ .gdbinit exists as a regular file"
+        log "  Backing up to: ${target}.bak"
+        mv "$target" "${target}.bak"
+    fi
+    
+    # Create symlink
+    ln -s "$source" "$target"
+    
+    if [[ -L "$target" ]]; then
+        log "✓ Created .gdbinit symlink: $target -> $source"
+        return 0
+    else
+        log "Error: Failed to create symlink"
+        return 1
+    fi
+}
+
+log "Setting up GDB configuration from rdh..."
+echo ""
+
+setup_gdbinit
+
+echo ""
+log "✓ GDB setup complete!"
+log "  .gdbinit is now managed through rdh/config/"
+log "  Edit rdh/config/gdbinit to update gdb configuration"
+

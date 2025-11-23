@@ -1,0 +1,48 @@
+# GDB/rocgdb configuration for AMD ROCm development
+# Maintained in rdh repo, symlinked to ~/.gdbinit
+
+# Enable pretty-printing for STL containers
+set print pretty on
+set print asm-demangle on
+set print demangle on
+
+# Set disassembly flavor to Intel (easier to read than AT&T syntax)
+set disassembly-flavor intel
+
+# Allow pending breakpoints (useful for GPU kernels that load dynamically)
+set breakpoint pending on
+
+# History
+set history save on
+set history size 10000
+set history filename ~/.gdb_history
+
+# Display settings
+set print array on
+set print array-indexes on
+set print elements 200
+
+# Disable pagination (useful for automated scripts)
+set pagination off
+
+# AMD GPU debugging settings
+# Uncomment if using GPU debugging features:
+# set amd-gpu-precise-memory on
+# set non-stop on
+
+# Custom helper commands
+
+# Print std::string content
+define ps
+    if $argc == 0
+        help ps
+    else
+        printf "%s\n", $arg0.c_str()
+    end
+end
+
+document ps
+Print a std::string's content
+Usage: ps <string_variable>
+end
+
