@@ -1,0 +1,189 @@
+#!/bin/bash
+# Generate a VSCode workspace file with all depth-1 subfolders
+# Usage: setup-vsc-ws [path]
+#   path: Directory to create workspace for (default: current directory)
+
+# Enable rdh
+rdh_root="$(realpath ${BASH_SOURCE[0]}|xargs dirname)/.."
+
+# Expose self
+SELF_TAG="[$(basename ${BASH_SOURCE[0]})]"
+
+source tools
+
+setup_vscode_workspace() {
+    local target_dir="${1:-.}"
+    target_dir=$(realpath "$target_dir")
+
+    # Check if directory exists
+    if [[ ! -d "$target_dir" ]]; then
+        log "Error: Directory does not exist: $target_dir"
+        return 1
+    fi
+
+    # Get folder name for workspace filename
+    local folder_name=$(basename "$target_dir")
+    local workspace_file="${target_dir}/${folder_name}.code-workspace"
+
+    # Check if workspace file already exists
+    if [[ -f "$workspace_file" ]]; then
+        log "⚠ Workspace file already exists: $workspace_file"
+        log "  Please remove it first or choose a different directory"
+        return 1
+    fi
+
+    log "Generating workspace file: $workspace_file"
+
+    # Get all depth-1 subdirectories
+    local subfolders=$(cd "$target_dir" && ls -d */ 2>/dev/null | sed 's#/##' | sort)
+
+    if [[ -z "$subfolders" ]]; then
+        log "⚠ No subdirectories found in $target_dir"
+        log "  Creating workspace with empty folders array"
+    fi
+
+    # Generate JSON folders array
+    local folders_array=()
+    for folder in $subfolders; do
+        folders_array+=("$folder")
+    done
+
+    # Build JSON with proper comma handling
+    local folders_json=""
+    local i=0
+    for folder in "${folders_array[@]}"; do
+        # Add comma before entry if not the first
+        if (( i > 0 )); then
+            folders_json+=$',\n'
+        fi
+        folders_json+="		{
+			\"path\": \"$folder\"
+		}"
+        i=$((i + 1))
+    done
+    # Add final newline
+    folders_json+=$'\n'
+
+    # Generate workspace file
+    cat > "$workspace_file" << 'WORKSPACE_EOF'
+{
+	"folders": [
+WORKSPACE_EOF
+
+    echo "$folders_json" >> "$workspace_file"
+
+    cat >> "$workspace_file" << 'WORKSPACE_EOF'
+	],
+	"settings": {
+		"files.associations": {
+			"algorithm": "cpp",
+			"cctype": "cpp",
+			"clocale": "cpp",
+			"cmath": "cpp",
+			"csetjmp": "cpp",
+			"csignal": "cpp",
+			"cstdarg": "cpp",
+			"cstddef": "cpp",
+			"cstdio": "cpp",
+			"cstdlib": "cpp",
+			"cstring": "cpp",
+			"ctime": "cpp",
+			"cwchar": "cpp",
+			"cwctype": "cpp",
+			"any": "cpp",
+			"array": "cpp",
+			"atomic": "cpp",
+			"strstream": "cpp",
+			"bit": "cpp",
+			"bitset": "cpp",
+			"cfenv": "cpp",
+			"charconv": "cpp",
+			"chrono": "cpp",
+			"cinttypes": "cpp",
+			"codecvt": "cpp",
+			"compare": "cpp",
+			"complex": "cpp",
+			"concepts": "cpp",
+			"condition_variable": "cpp",
+			"coroutine": "cpp",
+			"cstdint": "cpp",
+			"deque": "cpp",
+			"forward_list": "cpp",
+			"list": "cpp",
+			"map": "cpp",
+			"set": "cpp",
+			"string": "cpp",
+			"unordered_map": "cpp",
+			"unordered_set": "cpp",
+			"vector": "cpp",
+			"exception": "cpp",
+			"expected": "cpp",
+			"functional": "cpp",
+			"iterator": "cpp",
+			"memory": "cpp",
+			"memory_resource": "cpp",
+			"numeric": "cpp",
+			"optional": "cpp",
+			"random": "cpp",
+			"ratio": "cpp",
+			"regex": "cpp",
+			"source_location": "cpp",
+			"string_view": "cpp",
+			"system_error": "cpp",
+			"tuple": "cpp",
+			"type_traits": "cpp",
+			"utility": "cpp",
+			"format": "cpp",
+			"fstream": "cpp",
+			"future": "cpp",
+			"initializer_list": "cpp",
+			"iomanip": "cpp",
+			"iosfwd": "cpp",
+			"iostream": "cpp",
+			"istream": "cpp",
+			"limits": "cpp",
+			"mutex": "cpp",
+			"new": "cpp",
+			"numbers": "cpp",
+			"ostream": "cpp",
+			"ranges": "cpp",
+			"semaphore": "cpp",
+			"shared_mutex": "cpp",
+			"span": "cpp",
+			"sstream": "cpp",
+			"stdexcept": "cpp",
+			"stdfloat": "cpp",
+			"stop_token": "cpp",
+			"streambuf": "cpp",
+			"thread": "cpp",
+			"typeindex": "cpp",
+			"typeinfo": "cpp",
+			"valarray": "cpp",
+			"variant": "cpp"
+		}
+	}
+}
+WORKSPACE_EOF
+
+    if [[ ! -f "$workspace_file" ]]; then
+        log "Error: Failed to create workspace file"
+        return 1
+    fi
+
+    log "✓ Workspace file created: $workspace_file"
+    echo ""
+    log "Folders added:"
+    echo "$subfolders" | sed 's/^/  - /'
+    echo ""
+    log "To open: cursor $workspace_file"
+    
+    return 0
+}
+
+# Main execution
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    # Script is being run directly
+    setup_vscode_workspace "$@"
+fi
+
+# If sourced, function is now available for use
