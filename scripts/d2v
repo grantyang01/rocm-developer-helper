@@ -1,0 +1,44 @@
+#!/bin/bash
+# Convert docker inspect environment variables to VS Code launch.json format
+# Usage: d2v <container_or_image_name>
+
+source tools
+
+# Expose self
+SELF_TAG="[$(basename ${BASH_SOURCE[0]})]"
+
+if [ $# -eq 0 ]; then
+    log "Usage: ${BASH_SOURCE[0]} <container_or_image_name>"
+    return 1
+fi
+
+# Check if running inside docker
+if is_inside_docker; then
+    log "cannot run inside docker!"
+    return 1
+fi
+
+container_or_image=$1
+
+docker inspect "$container_or_image" | jq -r '.[0].Config.Env[]' | awk -F= '
+BEGIN {
+    print "            \"environment\": ["
+}
+# Handle PATH specially - append to existing
+$1 == "PATH" {
+    print "                {"
+    print "                    \"name\": \"PATH\","
+    print "                    \"value\": \"" $2 ":${env:PATH}\""
+    print "                },"
+    next
+}
+# Print all other variables
+{
+    print "                {"
+    print "                    \"name\": \"" $1 "\","
+    print "                    \"value\": \"" $2 "\""
+    print "                },"
+}
+END {
+    print "            ],"
+}'

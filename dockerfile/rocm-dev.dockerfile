@@ -88,24 +88,31 @@ RUN apt-get update -y && \
 
 # SSH server for remote development (required for connecting to container via SSH)
 # Purpose: 
-# 1. cursor IDE doesn't have the option of "connect to running container" as vscode does
-# 2. ssh server is required in container for cursor IDE to connect to running container
-# 3. vscode can also make use of ssh server in container for remote development
+# 1. Cursor IDE doesn't have "Attach to Running Container" like VSCode does
+# 2. SSH server in container allows Cursor IDE to connect to running containers
+# 3. VSCode can also use SSH server for remote development
 #
 # How to use:
-#    connect from <host machine 1> to <container> at <host machine 2>:
-# 1. After container starts in <host machine 2>, SSH needs to be started manually: sudo /usr/sbin/sshd or rd-ssh-server
-# 2. config example in <host machine 1>(~/.ssh/config):
-#   Host host_machine_2
-#       HostName <host_machine_2_to_launch_container>
+#    Connect from remote machine to container on host machine:
+# 1. Start SSH in container after launch: sudo /usr/sbin/sshd or rd-ssh-server
+# 2. Configure SSH on client machine (~/.ssh/config):
+#   Host host_machine
+#       HostName <host_machine_hostname_or_ip>
 #       User <username>
 #   
 #   Host mycontainer
-#       HostName <container_ip_in_host_machine_2>  # Get at host machine with: docker inspect <container> -f '{{.NetworkSettings.IPAddress}}'
+#       HostName <container_ip>  # Get with: docker inspect <container> -f '{{.NetworkSettings.IPAddress}}'
 #       User <username>
 #       Port 22
-#       ProxyJump host_machine_2
-#  3. connect with: ssh mycontainer or use Remote-SSH in Cursor/VSCode
+#       ProxyJump host_machine
+# 3. Connect: ssh mycontainer (or use Remote-SSH in Cursor/VSCode)
+# 4. Environment variables in debug sessions:
+#    4.1 Pre-built environment variables from the image are not inherited in
+#        debug sessions (launch.json). Workaround: set them in launch.json 
+#        environment section.
+#    4.2 Use script `d2v` (in rdh/scripts/) to export container/image env vars
+#        in VSCode launch.json format for copy-paste.
+#        Example: d2v <container_name> | pbcopy
 RUN apt-get update -y && \
     apt-get install -y openssh-server && \
     mkdir -p /run/sshd && \

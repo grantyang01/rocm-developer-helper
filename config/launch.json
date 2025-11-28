@@ -22,21 +22,108 @@
             "request": "launch",
             "program": "/home/gryang/work/shisa/binDebug/gemm_test",
             "args": [
-                "--shader_path", "/home/gryang/work/shisa/app_study/hipblaslt_gemm_tf32/case1_950.elf",
+                // Shader options:
+                // "--shader_path", "/home/gryang/work/shisa/app_study/hipblaslt_gemm_tf32/case1_all.elf",  // All gfx architectures
+                "--shader_path", "/home/gryang/work/shisa/app_study/hipblaslt_gemm_tf32/case1_tn.s",  // hipBLASLt kernel (StreamK, needs CBDATA_hipblaslt)
+                //"--shader_path", "/home/gryang/work/shisa/app_study/hipblaslt_gemm_tf32/case1.elf",  // built by shader_build  from case1.s, same as case1.elf 
+                // "--shader_path", "/home/gryang/work/shisa/shader_dev_SSP/shaders/GEMM/gemm_f32_bf16.ssp",  // Human-written SSP (traditional tiled GEMM)
+                "--interface", "hipblaslt",
                 "-M", "2048",
                 "-N", "8192",
                 "-K", "5640",
                 "--n_groups", "256",
                 "--alpha", "1.0",
                 "--beta", "0.0",
-                "--a_col", "1",
-                "--b_col", "0",
-                "--check", "0",
-                "--repeat", "1"
+                "--a_col", "0",    // A: row-major = A^T in col-major view
+                "--b_col", "1",    // B: col-major = B in col-major view
+                "--cd_col", "1",   // C/D: col-major (required for hipBLASLt)
+                "--pattern", "12300",  // Serial along M dim (easier to debug strides)
+                // "--pattern", "1004",   // Bit-exact pattern
+                "--check", "1",        // Enable correctness validation
+                "--repeat", "1",
+                // For performance testing (matching case1_tn.yaml):
+                // "--buffer_rotate", "1",     // 1 GB buffer rotation (case1_tn.yaml uses 512 MB)
+                // "--repeat", "1049",         // Match case1_tn.yaml iters
+                // "--pattern", "4",           // trig_float initialization (match case1_tn.yaml)
+                // NOTE: case1.s requires hipBLASLt CBDATA (184 bytes, 38 fields)
+                //       workspace: 64MB, flags: 16MB (or 1-byte dummy buffers)
             ],
             "stopAtEntry": true,
             "cwd": "/home/gryang/work/shisa/binDebug",
-            "environment": [],
+            "environment": [
+                {
+                    "name": "LD_LIBRARY_PATH",
+                    "value": "/SHISA/binDebug:/SHISA/bin:/opt/rocm/lib/llvm/lib"
+                },
+                {
+                    "name": "PATH",
+                    "value": "/SHISA/bin:/opt/rocm-7.2.0/bin:/opt/rocm-7.2.0/lib/llvm/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:${env:PATH}"
+                },
+                {
+                    "name": "DEBIAN_FRONTEND",
+                    "value": "noninteractive"
+                },
+                {
+                    "name": "ROCM_VERSION",
+                    "value": "7.2.0"
+                },
+                {
+                    "name": "ROCM_PATH",
+                    "value": "/opt/rocm-7.2.0"
+                },
+                {
+                    "name": "ROCM_ROOT",
+                    "value": "/opt/rocm-7.2.0"
+                },
+                {
+                    "name": "CMAKE_PREFIX_PATH",
+                    "value": "/opt/rocm-7.2.0"
+                },
+                {
+                    "name": "HOME",
+                    "value": "/home/gryang"
+                },
+                {
+                    "name": "CC",
+                    "value": "/opt/rocm/llvm/bin/clang"
+                },
+                {
+                    "name": "CXX",
+                    "value": "/opt/rocm/llvm/bin/clang++"
+                },
+                {
+                    "name": "SHISA",
+                    "value": "/SHISA"
+                },
+                {
+                    "name": "SP3_ASIC",
+                    "value": "MI350"
+                },
+                {
+                    "name": "SP3_PREPROCESSOR",
+                    "value": "perl /SHISA/tools/scripts/preprocessor.pl"
+                },
+                {
+                    "name": "SP3_PREPROCESSOR_INCLUDE_DIRS",
+                    "value": "/SHISA/shader_dev_SSP/include;/SHISA/shader_dev_IL/include;/SHISA/shader_dev/include/lib"
+                },
+                {
+                    "name": "SP3_PREPROCESSOR_CONFIG_FILE",
+                    "value": "/SHISA/sp3_config.log"
+                },
+                {
+                    "name": "SHISA_CLANG_BINARY",
+                    "value": "/opt/rocm/llvm/bin/clang"
+                },
+                {
+                    "name": "SHISA_ELF_ABI",
+                    "value": "HSA"
+                },
+                {
+                    "name": "TT_OPTS",
+                    "value": "-a GFX9"
+                },                
+            ],
             "externalConsole": false,
             "MIMode": "gdb",
             "miDebuggerPath": "/opt/rocm/bin/rocgdb"
@@ -53,7 +140,80 @@
                 "/home/gryang/work/shisa/app_study/hipblaslt_gemm_tf32/case1.yaml"
             ],
             
-            "environment": [],
+            "environment": [
+                {
+                    "name": "PATH",
+                    "value": "/SHISA/bin:/opt/rocm-7.2.0/bin:/opt/rocm-7.2.0/lib/llvm/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:${env:PATH}"
+                },
+                {
+                    "name": "DEBIAN_FRONTEND",
+                    "value": "noninteractive"
+                },
+                {
+                    "name": "ROCM_VERSION",
+                    "value": "7.2.0"
+                },
+                {
+                    "name": "ROCM_PATH",
+                    "value": "/opt/rocm-7.2.0"
+                },
+                {
+                    "name": "ROCM_ROOT",
+                    "value": "/opt/rocm-7.2.0"
+                },
+                {
+                    "name": "CMAKE_PREFIX_PATH",
+                    "value": "/opt/rocm-7.2.0"
+                },
+                {
+                    "name": "HOME",
+                    "value": "/home/gryang"
+                },
+                {
+                    "name": "CC",
+                    "value": "/opt/rocm/llvm/bin/clang"
+                },
+                {
+                    "name": "CXX",
+                    "value": "/opt/rocm/llvm/bin/clang++"
+                },
+                {
+                    "name": "SHISA",
+                    "value": "/SHISA"
+                },
+                {
+                    "name": "LD_LIBRARY_PATH",
+                    "value": "/SHISA/bin:/opt/rocm/lib/llvm/lib"
+                },
+                {
+                    "name": "SP3_ASIC",
+                    "value": "MI350"
+                },
+                {
+                    "name": "SP3_PREPROCESSOR",
+                    "value": "perl /SHISA/tools/scripts/preprocessor.pl"
+                },
+                {
+                    "name": "SP3_PREPROCESSOR_INCLUDE_DIRS",
+                    "value": "/SHISA/shader_dev_SSP/include;/SHISA/shader_dev_IL/include;/SHISA/shader_dev/include/lib"
+                },
+                {
+                    "name": "SP3_PREPROCESSOR_CONFIG_FILE",
+                    "value": "/SHISA/sp3_config.log"
+                },
+                {
+                    "name": "SHISA_CLANG_BINARY",
+                    "value": "/opt/rocm/llvm/bin/clang"
+                },
+                {
+                    "name": "SHISA_ELF_ABI",
+                    "value": "HSA"
+                },
+                {
+                    "name": "TT_OPTS",
+                    "value": "-a GFX9"
+                },                
+            ],
             "stopAtEntry": true,
             "cwd": "/home/gryang/work/",
             "externalConsole": false,

@@ -1,0 +1,107 @@
+#!/bin/bash
+
+# Script to add .reqd_workgroup_size metadata to kernel .s files
+# This is required for PAL to recognize the workgroup size
+#
+# Usage:
+#   s-add-wg-size file1.s file2.s ...
+#   s-add-wg-size case*.s
+#   s-add-wg-size *.s
+
+set -e
+
+# Default workgroup size (can be overridden with -w option)
+WORKGROUP_SIZE="[256,1,1]"
+
+# Function to show usage
+usage() {
+    echo "Usage: $0 [-w SIZE] file1.s [file2.s ...]"
+    echo ""
+    echo "Add .reqd_workgroup_size metadata to kernel .s files"
+    echo ""
+    echo "Options:"
+    echo "  -w SIZE    Workgroup size (default: [256,1,1])"
+    echo "             Examples: [256,1,1], [128,1,1], [64,2,1]"
+    echo ""
+    echo "Examples:"
+    echo "  $0 case1.s case2.s case3.s"
+    echo "  $0 case*.s"
+    echo "  $0 *.s"
+    echo "  $0 -w [128,1,1] kernel.s"
+    exit 1
+}
+
+# Function to process a single file
+process_file() {
+    local file="$1"
+    local workgroup_size="$2"
+    
+    if [[ ! -f "$file" ]]; then
+        echo "Warning: File not found: $file"
+        return 1
+    fi
+    
+    # Check if .reqd_workgroup_size already exists
+    if grep -q "\.reqd_workgroup_size:" "$file"; then
+        echo "✓ $file already has .reqd_workgroup_size"
+        return 0
+    fi
+    
+    # Check if .max_flat_workgroup_size exists
+    if ! grep -q "\.max_flat_workgroup_size:" "$file"; then
+        echo "Warning: $file doesn't have .max_flat_workgroup_size, skipping"
+        return 1
+    fi
+    
+    # Create backup
+    cp "$file" "$file.bak"
+    echo "Created backup: $file.bak"
+    
+    # Add .reqd_workgroup_size after .max_flat_workgroup_size
+    sed -i "/\.max_flat_workgroup_size:/a\\    .reqd_workgroup_size:        $workgroup_size" "$file"
+    
+    echo "✓ Added .reqd_workgroup_size: $workgroup_size to $file"
+}
+
+# Parse options
+while getopts "w:h" opt; do
+    case $opt in
+        w)
+            WORKGROUP_SIZE="$OPTARG"
+            ;;
+        h)
+            usage
+            ;;
+        *)
+            usage
+            ;;
+    esac
+done
+shift $((OPTIND-1))
+
+# Check if files were provided
+if [[ $# -eq 0 ]]; then
+    echo "Error: No input files specified"
+    echo ""
+    usage
+fi
+
+# Main script
+echo "Adding .reqd_workgroup_size metadata..."
+echo "Workgroup size: $WORKGROUP_SIZE"
+echo ""
+
+# Process all files (supports glob expansion)
+file_count=0
+processed_count=0
+
+for file in "$@"; do
+    file_count=$((file_count + 1))
+    if process_file "$file" "$WORKGROUP_SIZE"; then
+        processed_count=$((processed_count + 1))
+    fi
+    echo
+done
+
+echo "Done! Processed $processed_count out of $file_count file(s)."
+
