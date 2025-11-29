@@ -3,6 +3,10 @@
 . "$PSScriptRoot\tools.ps1"
 
 function Get-ShisaSrc {
+    param(
+        [switch]$BinariesOnly
+    )
+    
     $outputPath = "shisa_src.tar.gz"
     $config = Read-Yaml -Path "$PSScriptRoot\config.yaml"
     
@@ -37,39 +41,41 @@ function Get-ShisaSrc {
             Copy-Item $serverLinux -Destination 'bin/ShisaToolsServer.Linux64' -Force
         }
 
-        # List of folders to include
-        $folders = @(
-            'shader_dev',
-            'shader_dev_IL',
-            'shader_dev_SSP',
-            'shader_releases',
-            'sp3',
-            'testing',
-            'test_apps',
-            'app_study/hipblaslt_gemm_tf32/case*.yaml'
-        )
-
-        # Add ShisaToolsServer.Linux64 if it exists in bin
+        # Start with binaries (always included)
+        $folders = @()
+        
         if (Test-Path 'bin/ShisaToolsServer.Linux64') {
             $folders += 'bin/ShisaToolsServer.Linux64'
         }
-
-        # Add .so files from bin directory if they exist
+        
         if (Test-Path 'bin/*.so') {
             $folders += 'bin/*.so'
         }
-
         if (Test-Path 'binDebug/*.so') {
             $folders += 'binDebug/*.so'
         }
-
-        # Add all subdirectories under tools\ except visual_studio_plugins
-        if (Test-Path 'tools') {
-            $toolsDirs = Get-ChildItem -Path 'tools' -Directory | 
-                Where-Object { $_.Name -ne 'visual_studio_plugins' } |
-                ForEach-Object { Join-Path 'tools' $_.Name }
+        
+        # Add source directories only if NOT binaries-only
+        if (-not $BinariesOnly) {
+            $folders += @(
+                'shader_dev',
+                'shader_dev_IL',
+                'shader_dev_SSP',
+                'shader_releases',
+                'sp3',
+                'testing',
+                'test_apps',
+                'app_study/hipblaslt_gemm_tf32/case*.yaml'
+            )
             
-            $folders += $toolsDirs
+            # Add tools directories
+            if (Test-Path 'tools') {
+                $toolsDirs = Get-ChildItem -Path 'tools' -Directory | 
+                    Where-Object { $_.Name -ne 'visual_studio_plugins' } |
+                    ForEach-Object { Join-Path 'tools' $_.Name }
+                
+                $folders += $toolsDirs
+            }
         }
 
         # Use Windows tar (available in Windows 10+)

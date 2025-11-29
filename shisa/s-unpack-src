@@ -1,32 +1,24 @@
 #!/usr/bin/bash
-# expose rdh
 rdh_root="$(realpath $0|xargs dirname)/.."
 source ${rdh_root}/activate
 
-# expose self
 bin_dir=$(realpath $0|xargs dirname)
 SELF_TAG="[$(basename $0)]"
 
-
-# import tools
 source docker-helper
 source s-config
 
-# run at host
 if is_inside_docker; then
-    die "fail: cannot run inside docker!"
+    die "Cannot run inside docker!"
 fi
 
-src_file="./shisa_src.tar.gz"
-if (( $# == 1 )); then
-    src_file=$1
-fi
-
-target="./shisa"
-if (( $# == 2 )); then
-    src_file=$1
+# Parse arguments
+src_file="${1:-./shisa_src.tar.gz}"
+target="${2:-./shisa}"
+if [[ ! -f "$src_file" ]]; then
+    die "Tarball not found: $src_file"
 fi
 
 if ! extract "$src_file" "$target"; then
-    die "fail: unpack $src_file to $target"
+    die "Failed to unpack $src_file to $target"
 fi

@@ -238,17 +238,31 @@ function extract() {
     return 0
 }
 
-function enable_scripts() {
+function fix_line_endings() {
     local dir=$1
     if ! check_tool dos2unix dos2unix deb; then
         die "tool not available: dos2unix"
     fi
-    # to unix
+    # Convert Windows line endings (CRLF) to Unix (LF)
     find "$dir" -type f \( -name "*.sh" -o -name "*.pl" -o -name "*.py" \) -exec dos2unix {} \;
-    # add exec flag
-    find "$dir" -type f \( -name "*.sh" -o -name "*.pl" -o -name "*.py" -o -name "*.so" -o -name "*.Linux64" \) -exec chmod +rwx {} \;
-    # add write permission to shader files *.ssp .sp3 .vcxproj .sln
-    find "$dir" -type f \( -name "*.ssp" -o -name "*.sp3" -o -name "*.vcxproj" -o -name "*.sln" \) -exec chmod +rw {} \;
+    return 0
+}
+
+function fix_permissions() {
+    local dir=$1
+    # Add exec flag to scripts and binaries
+    find "$dir" -type f \( -name "*.sh" -o -name "*.pl" -o -name "*.py" -o -name "*.so" -o -name "*.Linux64" \) -exec chmod +x {} \;
+    # Add write permission to shader files and project files
+    find "$dir" -type f \( -name "*.ssp" -o -name "*.sp3" -o -name "*.vcxproj" -o -name "*.sln" \) -exec chmod +w {} \;
+    return 0
+}
+
+function enable_scripts() {
+    # Combined function for non-P4 workflows
+    # For P4 workspaces, use fix_permissions() only (P4 handles line endings)
+    local dir=$1
+    fix_line_endings "$dir"
+    fix_permissions "$dir"
     return 0
 }
 

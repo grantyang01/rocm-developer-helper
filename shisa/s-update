@@ -1,9 +1,11 @@
 #!/usr/bin/bash
 # SHISA Update Script
-# Unpacks SHISA source from tar.gz and builds inside Docker container
+# Unpacks SHISA from tar.gz (full or binaries-only)
 #
 # Usage:
-#   s-update [src_file]   # Unpack and build (default: ~/work/shisa_src.tar.gz)
+#   s-update [tarball]
+#   Default: ~/work/shisa_src.tar.gz (full mode)
+#   For binaries: ~/work/shisa_binaries.tar.gz (extracts to P4 workspace)
 
 # expose rdh
 rdh_root="$(realpath $0|xargs dirname)/.."
@@ -22,21 +24,21 @@ function update_shisa() {
     log "1. ++++++++++++++++++++ unpack shisa src +++++++++++++++++"
     local src_file="$1"
     
-    if [ ! -f "$src_file" ]; then
-        die "SHISA source file not found: $src_file"
+    if [[ ! -f "$src_file" ]]; then
+        die "Tarball not found: $src_file"
     fi
     
-    local target="$(realpath "$src_file" | xargs dirname)"/shisa
+    local target="$(dirname "$(realpath "$src_file")")"/shisa
     if ! s-unpack-src "$src_file" "$target"; then
-        die "fail: unpack $src_file to $target"
+        die "Failed to unpack $src_file"
     fi
-    log "++++++++++++++++++++ unpack shisa src: succ +++++++++++++++++"
+    log "✓ Unpacked successfully"
     
     # Step 2: SHISA setup
     log "2. ++++++++++++++++++++ shisa update +++++++++++++++++"
-    if ! s-open -s; then
+        if ! s-open -s; then
         die "fail: s-open setup shisa docker"
-    fi
+        fi
     log "2. ++++++++++++++++++++ shisa setup: sucess +++++++++++++++++"
     
     log "SHISA update completed successfully!"
@@ -48,6 +50,7 @@ if is_inside_docker; then
     die "fail: cannot run inside docker!"
 fi
 
-# update shisa in ./shisa
-update_shisa "./shisa_src.tar.gz"
+# Default tarball
+DEFAULT_TARBALL="$HOME/work/shisa_src.tar.gz"
+update_shisa "${1:-$DEFAULT_TARBALL}"
 

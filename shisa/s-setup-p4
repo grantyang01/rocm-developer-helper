@@ -1,0 +1,221 @@
+#!/bin/bash
+
+# P4 Setup Script for Linux
+# Sets up P4 environment from config.local.yaml
+
+RDH_ROOT="$(dirname $(dirname $(realpath "${BASH_SOURCE[0]}")))"
+CONFIG_FILE="$RDH_ROOT/scripts/wutil/config.local.yaml"
+SELF_TAG="[$(basename "${BASH_SOURCE[0]}")]"
+
+# Source tools and docker-helper
+source tools
+source docker-helper
+
+# Install P4 command-line client
+install_p4_tools() {
+    # Note: Assumes ~/.local/bin is in PATH (set up during system deployment)
+    local bin_dir="$HOME/.local/bin"
+    
+    mkdir -p "$bin_dir"
+    
+    local p4_version="r23.2"
+    local base_url="https://cdist2.perforce.com/perforce/${p4_version}/bin.linux26x86_64"
+    
+    # Install p4 command-line client
+    if command -v p4 &>/dev/null; then
+        log "✓ p4 already installed: $(command -v p4)"
+    else
+        log "Downloading p4 command-line client..."
+        if wget -qO "$bin_dir/p4" "$base_url/p4"; then
+            chmod +x "$bin_dir/p4"
+            log "✓ p4 installed to $bin_dir/p4"
+        else
+            log "ERROR: Failed to download p4"
+            return 1
+        fi
+    fi
+    
+    log "✓ P4 command-line client ready"
+    return 0
+}
+
+# Ensure yq is available (one-time check)
+ensure_yq() {
+    # PATH is already set up by caller, just check if yq exists
+    if command -v yq &>/dev/null; then
+        return 0
+    fi
+    
+    log "yq not found. Attempting to install..."
+    
+    if check_tool yq yq deb >/dev/null 2>&1; then
+        return 0
+    fi
+    
+    # Fallback: Download binary if apt doesn't have it
+    log "Installing yq from GitHub to ~/.local/bin..."
+    if wget -qO ~/.local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 2>&1; then
+        chmod +x ~/.local/bin/yq
+        log "✓ yq installed to ~/.local/bin/yq"
+        return 0
+    else
+        log "ERROR: Failed to install yq"
+        return 1
+    fi
+}
+
+# Function to read YAML values (with anchor resolution)
+read_yaml_value() {
+    local key=$1
+    local file=$2
+    
+    # Use explode to resolve YAML anchors
+    yq eval ".devtools.p4.${key} | explode(.)" "$file" 2>/dev/null
+}
+
+# Main setup function
+setup_p4() {
+    if [[ ! -f "$CONFIG_FILE" ]]; then
+        die "Config file not found: $CONFIG_FILE\nPlease copy config.local.yaml.example to config.local.yaml and configure it."
+    fi
+    
+    # Ensure yq is available before reading config
+    # Note: Assumes ~/.local/bin is in PATH (set up during initial deployment)
+    if ! ensure_yq; then
+        log "ERROR: yq is required but not available"
+        return 1
+    fi
+    
+    log "Configuring Perforce (P4) from $CONFIG_FILE..."
+    
+    # Read P4 config from YAML
+    local p4_port=$(read_yaml_value "port" "$CONFIG_FILE")
+    local p4_port_ip=$(read_yaml_value "port_ip" "$CONFIG_FILE")
+    local p4_user=$(read_yaml_value "user" "$CONFIG_FILE")
+    local p4_client=$(read_yaml_value "client" "$CONFIG_FILE")
+    local p4_root=$(read_yaml_value "root" "$CONFIG_FILE")
+    local p4_view=$(read_yaml_value "view" "$CONFIG_FILE")
+    
+    # Expand tilde in paths
+    p4_root="${p4_root/#\~/$HOME}"
+    
+    # Use IP address if provided (fallback if hostname doesn't resolve)
+    local use_port="${p4_port_ip:-$p4_port}"
+    
+    if [[ -n "$p4_port_ip" ]]; then
+        log "Using P4PORT: $p4_port_ip (IP address)"
+    else
+        log "Using P4PORT: $p4_port"
+    fi
+    
+    # Set environment variables
+    export P4PORT="$use_port"
+    export P4USER="$p4_user"
+    export P4CLIENT="$p4_client"
+    
+    log "P4USER: $p4_user"
+    log "P4CLIENT: $p4_client"
+    
+    # Save to ~/.bashrc for persistence
+    if ! grep -q "^export P4PORT=" ~/.bashrc 2>/dev/null; then
+        log "Adding P4 environment to ~/.bashrc..."
+        cat >> ~/.bashrc << EOF
+
+# P4 Configuration (added by s-setup-p4)
+export P4PORT="$use_port"
+export P4USER="$p4_user"
+export P4CLIENT="$p4_client"
+EOF
+        log "✓ P4 environment saved to ~/.bashrc"
+    else
+        log "P4 environment already in ~/.bashrc (skipping)"
+    fi
+    
+    # Check if logged in
+    log "Checking P4 login status..."
+    if ! p4 login -s &>/dev/null; then
+        log "Not logged in. Please login to P4:"
+        p4 login
+        if [[ $? -ne 0 ]]; then
+            log "ERROR: P4 login failed"
+            return 1
+        fi
+    fi
+    
+    # Verify connection
+    log "Verifying P4 connection..."
+    if p4 info &>/dev/null; then
+        log "✓ P4 connection successful!"
+    else
+        log "ERROR: P4 connection test failed"
+        return 1
+    fi
+    
+    # Check if workspace is configured
+    if [[ -z "$p4_client" || -z "$p4_root" ]]; then
+        log "⚠ P4 client/root not configured - skipping workspace setup"
+        return 0
+    fi
+    
+    log "Checking P4 client workspace: $p4_client"
+    log "Root: $p4_root"
+    log "View: $p4_view"
+    
+    # Check if client already exists
+    if p4 clients | grep -q "^Client $p4_client "; then
+        log "✓ Client '$p4_client' already exists"
+    else
+        log "Creating new client workspace..."
+        mkdir -p "$p4_root"
+        
+        # Create the client workspace
+        p4 client -i > /dev/null 2>&1 << EOF
+Client: $p4_client
+Owner: $p4_user
+Root: $p4_root
+Options: noallwrite noclobber nocompress unlocked nomodtime normdir
+SubmitOptions: submitunchanged
+LineEnd: local
+View:
+	$p4_view //$p4_client/...
+EOF
+        
+        if [[ $? -ne 0 ]]; then
+            log "ERROR: Failed to create P4 client workspace"
+            return 1
+        fi
+        log "✓ P4 client workspace created successfully!"
+    fi
+    
+    # Sync files from depot
+    log ""
+    log "Syncing files from depot..."
+    cd "$p4_root" || return 1
+    
+    if ! p4 sync ...; then
+        log "⚠ Sync completed with errors"
+    fi
+    log "✓ Files synced"
+    
+    # Fix script permissions
+    log ""
+    log "Fixing script permissions..."
+    fix_permissions .
+    log "✓ Workspace ready: $p4_root"
+    
+    return 0
+}
+
+# Run if executed directly
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    # Install P4 tools if needed (unless in Docker)
+    if ! is_inside_docker; then
+        if ! install_p4_tools; then
+            log "ERROR: Failed to install P4 tools"
+            exit 1
+        fi
+    fi
+    
+    setup_p4
+fi
+

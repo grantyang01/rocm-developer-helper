@@ -3,7 +3,12 @@
 # Syncs SHISA from Perforce, builds, and packages source
 #
 # Usage:
-#   s-update.ps1
+#   s-update.ps1               # Full: source + binaries (for non-P4 Linux)
+#   s-update.ps1 -BinariesOnly # Just binaries (for Linux with P4 workspace)
+
+param(
+    [switch]$BinariesOnly
+)
 
 . "$PSScriptRoot\shisa_helper.ps1"
 . "$PSScriptRoot\update_shisa_src.ps1"
@@ -30,7 +35,7 @@ try {
     
     # Get SHISA code and binaries from the build directory
     Write-Host "Getting SHISA code and binaries..." -ForegroundColor Cyan
-    Get-ShisaSrc
+    Get-ShisaSrc -BinariesOnly:$BinariesOnly
 }
 finally {
     Set-Location $originalDir

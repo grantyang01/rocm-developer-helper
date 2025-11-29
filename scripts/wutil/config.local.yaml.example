@@ -18,7 +18,8 @@ devtools:
     user_name: "your-git-username"
     git_email: "your.email@amd.com"
   p4:
-    port: "your-p4-server:port"
+    port: "p4server.example.com:1666"  # Hostname of your P4 server
+    port_ip: "192.0.2.1:1666"  # IP address fallback if hostname doesn't resolve
     user: "your-p4-username"
     client: "your-client-name"
     root: *SHISA_ROOT
