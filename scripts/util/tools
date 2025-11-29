@@ -228,7 +228,6 @@ function extract() {
     local target=$2
 
     # unpack src from windows/p4v
-    refresh_dir "$target"
     if ! tar -xzvf "$src_file" -C "$target"; then
         die "fail: unpack $src_file"
     fi
@@ -349,3 +348,71 @@ function pdfopen() {
     return 0
 }
 alias po='pdfopen'
+
+# Ensure yq (YAML parser) is installed
+ensure_yq() {
+    # PATH is already set up by caller, just check if yq exists
+    if command -v yq &>/dev/null; then
+        return 0
+    fi
+    
+    log "yq not found. Attempting to install..."
+    
+    if check_tool yq yq deb >/dev/null 2>&1; then
+        return 0
+    fi
+    
+    # Fallback: Download binary if apt doesn't have it
+    log "Installing yq from GitHub to ~/.local/bin..."
+    if wget -qO ~/.local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 2>&1; then
+        chmod +x ~/.local/bin/yq
+        log "✓ yq installed to ~/.local/bin/yq"
+        return 0
+    else
+        log "ERROR: Failed to install yq"
+        return 1
+    fi
+}
+
+# Read YAML value from file with validation and anchor resolution
+# Usage: read_yaml_config <yaml_file> <key_path>
+# Example: read_yaml_config "config.yaml" ".devtools.p4.port"
+# Returns: value (via stdout), exit code 0 on success, 1 on failure
+read_yaml_config() {
+    local yaml_file=$1
+    local key_path=$2
+    
+    # Ensure yq is available
+    if ! ensure_yq; then
+        log "ERROR: yq is required but could not be installed"
+        return 1
+    fi
+    
+    # Check if file exists
+    if [[ ! -f "$yaml_file" ]]; then
+        log "ERROR: Config file not found: $yaml_file"
+        return 1
+    fi
+    
+    # Read from config with anchor resolution
+    local value=$(yq eval "${key_path} | explode(.)" "$yaml_file" 2>/dev/null)
+    
+    # Verify value exists
+    if [[ -z "$value" || "$value" == "null" ]]; then
+        log "ERROR: Key not found in config: $key_path (file: $yaml_file)"
+        return 1
+    fi
+    
+    # Expand ~ to $HOME if present
+    value="${value/#\~/$HOME}"
+    
+    echo "$value"
+    return 0
+}
+
+# Get SHISA root from config
+# Usage: shisa_root=$(get_shisa_root)
+get_shisa_root() {
+    local config_file="${rdh_root}/scripts/wutil/config.local.yaml"
+    read_yaml_config "$config_file" ".paths.SHISA_ROOT"
+}

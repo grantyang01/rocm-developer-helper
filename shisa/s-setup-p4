@@ -40,39 +40,6 @@ install_p4_tools() {
 }
 
 # Ensure yq is available (one-time check)
-ensure_yq() {
-    # PATH is already set up by caller, just check if yq exists
-    if command -v yq &>/dev/null; then
-        return 0
-    fi
-    
-    log "yq not found. Attempting to install..."
-    
-    if check_tool yq yq deb >/dev/null 2>&1; then
-        return 0
-    fi
-    
-    # Fallback: Download binary if apt doesn't have it
-    log "Installing yq from GitHub to ~/.local/bin..."
-    if wget -qO ~/.local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 2>&1; then
-        chmod +x ~/.local/bin/yq
-        log "✓ yq installed to ~/.local/bin/yq"
-        return 0
-    else
-        log "ERROR: Failed to install yq"
-        return 1
-    fi
-}
-
-# Function to read YAML values (with anchor resolution)
-read_yaml_value() {
-    local key=$1
-    local file=$2
-    
-    # Use explode to resolve YAML anchors
-    yq eval ".devtools.p4.${key} | explode(.)" "$file" 2>/dev/null
-}
-
 # Main setup function
 setup_p4() {
     if [[ ! -f "$CONFIG_FILE" ]]; then
@@ -89,12 +56,12 @@ setup_p4() {
     log "Configuring Perforce (P4) from $CONFIG_FILE..."
     
     # Read P4 config from YAML
-    local p4_port=$(read_yaml_value "port" "$CONFIG_FILE")
-    local p4_port_ip=$(read_yaml_value "port_ip" "$CONFIG_FILE")
-    local p4_user=$(read_yaml_value "user" "$CONFIG_FILE")
-    local p4_client=$(read_yaml_value "client" "$CONFIG_FILE")
-    local p4_root=$(read_yaml_value "root" "$CONFIG_FILE")
-    local p4_view=$(read_yaml_value "view" "$CONFIG_FILE")
+    local p4_port=$(read_yaml_config "$CONFIG_FILE" ".devtools.p4.port")
+    local p4_port_ip=$(read_yaml_config "$CONFIG_FILE" ".devtools.p4.port_ip")
+    local p4_user=$(read_yaml_config "$CONFIG_FILE" ".devtools.p4.user")
+    local p4_client=$(read_yaml_config "$CONFIG_FILE" ".devtools.p4.client")
+    local p4_root=$(read_yaml_config "$CONFIG_FILE" ".devtools.p4.root")
+    local p4_view=$(read_yaml_config "$CONFIG_FILE" ".devtools.p4.view")
     
     # Expand tilde in paths
     p4_root="${p4_root/#\~/$HOME}"
@@ -117,19 +84,23 @@ setup_p4() {
     log "P4CLIENT: $p4_client"
     
     # Save to ~/.bashrc for persistence
-    if ! grep -q "^export P4PORT=" ~/.bashrc 2>/dev/null; then
-        log "Adding P4 environment to ~/.bashrc..."
-        cat >> ~/.bashrc << EOF
+    # Remove old P4 configuration if exists
+    if grep -q "^export P4PORT=\|^export P4USER=\|^export P4CLIENT=\|# P4 Configuration" ~/.bashrc 2>/dev/null; then
+        log "Removing old P4 configuration from ~/.bashrc..."
+        sed -i '/# P4 Configuration (added by s-setup-p4)/,/^export P4CLIENT=/d' ~/.bashrc
+        # Also remove standalone P4 exports that might exist
+        sed -i '/^export P4PORT=/d; /^export P4USER=/d; /^export P4CLIENT=/d' ~/.bashrc
+    fi
+    
+    log "Adding P4 environment to ~/.bashrc..."
+    cat >> ~/.bashrc << EOF
 
 # P4 Configuration (added by s-setup-p4)
 export P4PORT="$use_port"
 export P4USER="$p4_user"
 export P4CLIENT="$p4_client"
 EOF
-        log "✓ P4 environment saved to ~/.bashrc"
-    else
-        log "P4 environment already in ~/.bashrc (skipping)"
-    fi
+    log "✓ P4 environment saved to ~/.bashrc"
     
     # Check if logged in
     log "Checking P4 login status..."
@@ -190,17 +161,18 @@ EOF
     # Sync files from depot
     log ""
     log "Syncing files from depot..."
+    mkdir -p "$p4_root"
     cd "$p4_root" || return 1
     
-    if ! p4 sync ...; then
+    if ! p4 sync -f ...; then
         log "⚠ Sync completed with errors"
     fi
     log "✓ Files synced"
     
-    # Fix script permissions
+    # Fix script permissions and line endings
     log ""
     log "Fixing script permissions..."
-    fix_permissions .
+    enable_scripts .
     log "✓ Workspace ready: $p4_root"
     
     return 0

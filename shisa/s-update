@@ -28,7 +28,14 @@ function update_shisa() {
         die "Tarball not found: $src_file"
     fi
     
-    local target="$(dirname "$(realpath "$src_file")")"/shisa
+    # Get SHISA root from config
+    local target=$(get_shisa_root)
+    if [[ $? -ne 0 ]]; then
+        die "Failed to get SHISA root from config"
+    fi
+    
+    log "Using SHISA root from config: $target"
+    
     if ! s-unpack-src "$src_file" "$target"; then
         die "Failed to unpack $src_file"
     fi

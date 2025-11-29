@@ -1,12 +1,7 @@
 #!/usr/bin/bash
-rdh_root="$(realpath $0|xargs dirname)/.."
-source ${rdh_root}/activate
+rdh_root="$(realpath ${BASH_SOURCE[0]}|xargs dirname)/.."
+SELF_TAG="[$(basename ${BASH_SOURCE[0]})]"
 
-# expose self
-bin_dir=$(realpath $0|xargs dirname)
-SELF_TAG="[$(basename $0)]"
-
-# import tools
 source gi-config
 source docker-helper
 source cmake-helper
@@ -144,22 +139,35 @@ function build_gi() {
 }
 
 
-# no dependency on libhsa-runtime64.a anymore.
-# setup_rocr 
+function install_gi() {
+    local target=$1
 
-if [[ "$1" == "1" ]]; then
-    # clone_gi gpu_interface
-    python3 ${rdh_root}/scripts/putil/clone_gi.py gpu_interface
-else
-    # run inside docker instance of $instance_name_gi
-    if ! is_docker_instance $instance_name_gi; then
-        die "fail: please run it at instance: $instance_name_gi"
+    mkdir -p /SHISA/bin /SHISA/binDebug
+    pushd $target
+    if ! cmake --build ./build-release; then
+        die "fail: install release gpu_interface"
     fi
 
-    build_gi gpu_interface
+    if ! cmake --build ./build-debug; then
+        die "fail: install debug gpu_interface"
+    fi
+    popd
+}
 
-    # libgpu_interface.<version>.so
-    log "======================results: gpu_interface=================="
-    find "$SHISA" -name "libgpu_interface.*.so"
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    if [[ "$1" == "1" ]]; then
+        # clone_gi gpu_interface
+        python3 ${rdh_root}/scripts/putil/clone_gi.py gpu_interface
+    else
+        # run inside docker instance of $instance_name_gi
+        if ! is_docker_instance $instance_name_gi; then
+            die "fail: please run it at instance: $instance_name_gi"
+        fi
+
+        build_gi gpu_interface
+
+        # libgpu_interface.<version>.so
+        log "======================results: gpu_interface=================="
+        find "$SHISA" -name "libgpu_interface.*.so"
+    fi
 fi
-exit 0
